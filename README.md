@@ -5,14 +5,10 @@ Tool untuk Termux. Repo ini masih tahap awal.
 ## Persiapan awal
 
 1. Pasang aplikasi **Termux** dan **Termux:API** dari F-Droid di HP. Jangan pakai versi Play Store.
-2. Buka Termux, lalu jalankan dua perintah ini:
+2. Buka Termux, lalu jalankan satu perintah ini:
 
 ```
-pkg install -y curl
-```
-
-```
-bash <(curl -fsSL https://raw.githubusercontent.com/skypin969/ToolPinz/main/setup.sh)
+pkg install -y curl && bash <(curl -fsSL https://raw.githubusercontent.com/skypin969/ToolPinz/main/setup.sh)
 ```
 
 Skrip `setup.sh` akan:
@@ -21,4 +17,4 @@ Skrip `setup.sh` akan:
 - memeriksa aplikasi Termux:API,
 - memasang paket: python, git, termux-api, libusb, android-tools.
 
-Kalau ada langkah yang gagal, perbaiki sesuai pesannya, lalu jalankan ulang perintah kedua.
+Kalau ada langkah yang gagal, perbaiki sesuai pesannya, lalu jalankan ulang bagian kedua perintah di atas (mulai dari `bash <(curl ...)`).
