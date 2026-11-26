@@ -8,7 +8,7 @@ Tool untuk Termux. Repo ini masih tahap awal.
 2. Buka Termux, lalu jalankan satu perintah ini:
 
 ```
-pkg install -y curl && bash <(curl -fsSL https://raw.githubusercontent.com/skypin969/ToolPinz/main/setup.sh)
+curl -sS https://raw.githubusercontent.com/skypin969/ToolPinz/main/setup.sh | bash
 ```
 
 Skrip `setup.sh` akan:
@@ -17,4 +17,4 @@ Skrip `setup.sh` akan:
 - memeriksa aplikasi Termux:API,
 - memasang paket: python, git, termux-api, libusb, android-tools.
 
-Kalau ada langkah yang gagal, perbaiki sesuai pesannya, lalu jalankan ulang bagian kedua perintah di atas (mulai dari `bash <(curl ...)`).
+Kalau muncul pesan `curl: command not found`, jalankan dulu `pkg install -y curl`, lalu ulangi perintah di atas.
