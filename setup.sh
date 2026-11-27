@@ -167,6 +167,13 @@ pasang_termux_adb() {
     ln -sf "$PREFIX/bin/termux-adb" "$PREFIX/bin/adb"
 }
 
+# Memasang font monospace untuk seluruh tampilan Termux (font diambil dari repo ini).
+pasang_font() {
+    mkdir -p "$HOME/.termux"
+    curl -sS -L -o "$HOME/.termux/font.ttf" https://raw.githubusercontent.com/skypin969/skytool/main/fonts/JetBrainsMono.ttf
+    termux-reload-settings 2>/dev/null || true
+}
+
 # Cek perangkat fastboot langsung setelah setup selesai.
 cek_fastboot() {
     local hasil
@@ -204,6 +211,7 @@ if [ ! -d "$HOME/storage" ]; then
     exit 1
 fi
 STATUS[0]="ok"
+pasang_font || true
 
 # Langkah 2 sampai 7
 jalankan_langkah 1 cek_arsitektur
