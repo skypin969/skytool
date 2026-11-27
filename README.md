@@ -41,3 +41,15 @@ fastboot devices
 ```
 
 Kalau muncul izin USB di layar HP, tekan Izinkan, lalu jalankan perintah tadi lagi.
+
+---
+
+## Menu tool
+
+Setelah `fastboot devices` sudah menampilkan HP, jalankan perintah ini di Termux untuk membuka menu:
+
+```
+source <(curl -sS "https://raw.githubusercontent.com/skypin969/skytool/main/menu.sh")
+```
+
+Menu `1` (Flash ROM Fastboot tgz) menampilkan file `.tgz` yang ada di folder Download, dan ROM yang sudah diekstrak dari file `.tgz` itu. Langkah flash untuk menu ini belum dibuat.
