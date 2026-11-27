@@ -275,7 +275,7 @@ ekstrak_rom_inti() {
         return 1
     fi
     EKSTRAK_HASIL="$dest"
-    MENU_PESAN="${PUTIH}[  ${ORANYE}OK${PUTIH}  ] [ ${ORANYE}$(t "ekstrak selesai" "extraction done")${PUTIH} ] : ${ORANYE}$(basename "$dest")${RESET}"
+    MENU_PESAN="${PUTIH}[ ${ORANYE}OK${PUTIH} ] [${ORANYE}$(t "ekstrak selesai" "extraction done")${PUTIH}]: ${ORANYE}$(basename "$dest")${RESET}"
     return 0
 }
 
@@ -403,6 +403,7 @@ pilih_cara_flash() {
         cetak "${ABU_TEKS}$(t "ROM dipilih: " "ROM selected: ")${ORANYE}$(basename "$folder")${RESET}"
         cetak ""
         cetak "${ABU_TEKS}$(t "Pilih cara flash:" "Choose flash method:")${RESET}"
+        cetak ""
         for ((i = 0; i < ${#skrip[@]}; i++)); do
             cetak "$(baris_rom $((i + 1)) "${nama[i]}")"
             printf '%s\n' "${ket[i]}" | while IFS= read -r baris; do
