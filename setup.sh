@@ -94,19 +94,6 @@ gambar_layar() {
         cetak "$PESAN"
     fi
 
-    garis=""
-    for ((j = 0; j < LEBAR; j++)); do
-        garis="${garis}─"
-    done
-    cetak ""
-    cetak "${ABU_GELAP}${garis}${RESET}"
-    if [ "$BLINK" -eq 1 ]; then
-        kursor="█"
-    else
-        kursor=" "
-    fi
-    BLINK=$((1 - BLINK))
-    cetak "${HIJAU_PROMPT}root@skytool${RESET}:${BIRU_PROMPT}~${RESET}\$ ${PUTIH}${kursor}${RESET}"
     printf '\033[J'
 }
 
