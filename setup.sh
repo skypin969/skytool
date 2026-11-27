@@ -6,41 +6,133 @@
 set -e
 
 VERSI="v9.6.9"
-MERAH='\033[0;31m'
-HIJAU='\033[0;32m'
-ORANYE='\033[38;5;208m'
-ABU='\033[0;90m'
-RESET='\033[0m'
+LEBAR=36
+TOTAL=7
+ESC=$'\033'
+RESET="${ESC}[0m"
+PUTIH="${ESC}[1;97m"
+ORANYE="${ESC}[38;5;208m"
+ORANYE_TERANG="${ESC}[38;5;215m"
+BG_ORANYE="${ESC}[48;5;208m"
+BG_ORANYE2="${ESC}[48;5;202m"
+ABU="${ESC}[38;5;245m"
+ABU_GELAP="${ESC}[38;5;238m"
+ABU_TRACK="${ESC}[38;5;236m"
+MERAH="${ESC}[38;5;203m"
+HIJAU_PROMPT="${ESC}[38;5;79m"
+BIRU_PROMPT="${ESC}[38;5;111m"
 
-tampil_judul() {
-    clear 2>/dev/null || true
-    printf "\n\033[1;97mSKY${ORANYE}TOOL${RESET}  ${ABU}%s${RESET}\n" "$VERSI"
-    printf "\033[48;5;208m\033[1;97m MENYIAPKAN TERMUX \033[0m\n\n"
+# Nama langkah (pendek supaya muat satu baris di layar HP)
+LABEL=("izin penyimpanan" "arsitektur HP" "termux-api terdeteksi" "apt update" "apt upgrade" "pkg install python git libusb" "termux-adb (fastboot USB)")
+# Status tiap langkah: pending, run, ok, fail
+STATUS=(pending pending pending pending pending pending pending)
+SPIN="⠋"
+PESAN=""
+BLINK=1
+
+cetak() {
+    printf '%s\033[K\n' "$1"
 }
 
-# Satu langkah berjalan di latar belakang. Selama berjalan hanya satu baris yang berubah:
-# "[ .. ]" dengan titik-titik bergantian. Berhasil: "[ OK ]" hijau. Gagal: "[ XX ]" merah dan isi error.
-run_step() {
-    local msg="$1"
+# Satu baris judul dengan latar oranye bergaris (garis miring dibuat dari dua warna oranye bergantian)
+baris_stripe() {
+    local teks="$1" baris="$2" i ch
+    local panjang=$(( LEBAR - 2 ))
+    while [ ${#teks} -lt $panjang ]; do
+        teks="$teks "
+    done
+    for ((i = 0; i < ${#teks}; i++)); do
+        ch="${teks:i:1}"
+        if (( ((i + baris * 2) / 4) % 2 )); then
+            printf '%s%s%s' "$BG_ORANYE2" "$PUTIH" "$ch"
+        else
+            printf '%s%s%s' "$BG_ORANYE" "$PUTIH" "$ch"
+        fi
+    done
+    printf '%s' "$RESET"
+}
+
+# Menggambar seluruh layar dari awal setiap kali (supaya tidak ada baris tertinggal)
+gambar_layar() {
+    local selesai=0 persen isi j bar kursor
+    for ((j = 0; j < TOTAL; j++)); do
+        if [ "${STATUS[$j]}" = "ok" ]; then
+            selesai=$((selesai + 1))
+        fi
+    done
+    persen=$(( selesai * 100 / TOTAL ))
+
+    printf '%s' "${ESC}[H"
+    cetak ""
+    cetak "${PUTIH}SKY${ORANYE}TOOL${RESET}$(printf '%*s' 22 '')${ABU}${VERSI}${RESET}"
+    cetak ""
+    cetak "$(baris_stripe "MENYIAPKAN TERMUX" 0)${BG_ORANYE}${PUTIH}${SPIN} ${RESET}"
+    cetak "$(baris_stripe "langkah ${selesai} dari ${TOTAL} · ${persen}%" 1)"
+
+    isi=$(( persen * LEBAR / 100 ))
+    bar=""
+    for ((j = 0; j < LEBAR; j++)); do
+        if [ "$j" -lt "$isi" ]; then
+            bar="${bar}${ORANYE}━"
+        else
+            bar="${bar}${ABU_TRACK}━"
+        fi
+    done
+    cetak ""
+    cetak "${bar}${RESET}"
+    cetak ""
+
+    for ((j = 0; j < TOTAL; j++)); do
+        case "${STATUS[$j]}" in
+            ok)   cetak "${ABU}[ OK ] ${LABEL[$j]}${RESET}" ;;
+            run)  cetak "${ORANYE_TERANG}[ .. ] ${LABEL[$j]}${RESET}" ;;
+            fail) cetak "${MERAH}[ XX ] ${LABEL[$j]}${RESET}" ;;
+            *)    cetak "${ABU_GELAP}[ -- ] ${LABEL[$j]}${RESET}" ;;
+        esac
+    done
+
+    if [ -n "$PESAN" ]; then
+        cetak ""
+        cetak "$PESAN"
+    fi
+
+    cetak ""
+    if [ "$BLINK" -eq 1 ]; then
+        kursor="█"
+    else
+        kursor=" "
+    fi
+    BLINK=$((1 - BLINK))
+    cetak "${HIJAU_PROMPT}root@skytool${RESET}:${BIRU_PROMPT}~${RESET}\$ ${PUTIH}${kursor}${RESET}"
+    printf '\033[J'
+}
+
+# Menjalankan satu langkah di latar belakang sambil layar digambar ulang.
+# Argumen: nomor langkah, lalu perintah yang dijalankan.
+jalankan_langkah() {
+    local idx="$1"
     shift
-    local log frame i=0
-    local frames=("." ".." "...")
+    local log pid i=0
+    local frames=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+    STATUS[$idx]="run"
     log=$(mktemp)
     "$@" > "$log" 2>&1 &
-    local pid=$!
+    pid=$!
     while kill -0 "$pid" 2>/dev/null; do
-        frame="${frames[$((i % 3))]}"
-        printf "\r\033[2K  ${ORANYE}[ .. ]${RESET} %s %s" "$msg" "$frame"
+        SPIN="${frames[$((i % 10))]}"
         i=$((i + 1))
-        sleep 0.5
+        gambar_layar
+        sleep 0.15
     done
     if wait "$pid"; then
-        printf "\r\033[2K  ${HIJAU}[ OK ]${RESET} %s\n" "$msg"
+        STATUS[$idx]="ok"
+        gambar_layar
         rm -f "$log"
     else
-        printf "\r\033[2K  ${MERAH}[ XX ]${RESET} %s\n" "$msg"
+        STATUS[$idx]="fail"
+        gambar_layar
         echo ""
-        tail -n 20 "$log"
+        tail -n 15 "$log"
         rm -f "$log"
         exit 1
     fi
@@ -81,43 +173,45 @@ cek_fastboot() {
     hasil=$(fastboot devices 2>&1 < /dev/null || true)
     echo ""
     if echo "$hasil" | grep -qE '[[:space:]]fastboot$'; then
-        printf "  ${HIJAU}Perangkat fastboot terdeteksi:${RESET}\n"
+        echo "  Perangkat fastboot terdeteksi:"
         echo "$hasil" | grep -E '[[:space:]]fastboot$'
     else
-        printf "  ${ABU}Belum ada perangkat fastboot.${RESET}\n"
+        echo "  Belum ada perangkat fastboot."
         echo "  Sambungkan HP dalam mode fastboot lewat OTG."
         echo "  Kalau muncul izin USB di layar HP, tekan Izinkan."
         echo "  Lalu jalankan lagi: fastboot devices"
     fi
 }
 
-tampil_judul
+clear 2>/dev/null || true
 
-# Langkah 1: izin penyimpanan (perlu tombol di layar HP, jadi tanpa animasi)
+# Langkah 1: izin penyimpanan (perlu tombol di layar HP)
+STATUS[0]="run"
 if [ ! -d "$HOME/storage" ]; then
-    echo "  Tekan Izinkan di layar HP."
+    PESAN="Tekan Izinkan di layar HP."
+    gambar_layar
     termux-setup-storage || true
-    for _ in $(seq 1 30); do
+    for _ in $(seq 1 60); do
         [ -d "$HOME/storage" ] && break
         sleep 1
     done
+    PESAN=""
 fi
 if [ ! -d "$HOME/storage" ]; then
-    printf "  ${MERAH}[ XX ]${RESET} Izin penyimpanan\n"
-    echo "  Jalankan lagi perintah awal di README."
+    STATUS[0]="fail"
+    gambar_layar
+    echo "Izin penyimpanan belum diberikan. Jalankan lagi perintah awal di README."
     exit 1
 fi
-printf "  ${HIJAU}[ OK ]${RESET} Izin penyimpanan\n"
+STATUS[0]="ok"
 
-# Langkah 2 sampai 7: setiap langkah tampil dengan animasi titik-titik.
-# Teks dibuat pendek supaya muat dalam satu baris di layar HP.
-run_step "Memeriksa arsitektur HP" cek_arsitektur
-run_step "Memeriksa Termux:API" cek_termux_api
-run_step "Memperbarui daftar paket" bash -c "yes | apt update"
-run_step "Memasang pembaruan paket" bash -c "yes | apt upgrade"
-run_step "Memasang python, git, libusb" bash -c "yes | pkg install python git termux-api libusb"
-run_step "Memasang adb & fastboot" pasang_termux_adb
+# Langkah 2 sampai 7
+jalankan_langkah 1 cek_arsitektur
+jalankan_langkah 2 cek_termux_api
+jalankan_langkah 3 bash -c "yes | apt update"
+jalankan_langkah 4 bash -c "yes | apt upgrade"
+jalankan_langkah 5 bash -c "yes | pkg install python git termux-api libusb"
+jalankan_langkah 6 pasang_termux_adb
 
-echo ""
-printf "  ${HIJAU}Persiapan selesai.${RESET}\n"
+gambar_layar
 cek_fastboot
