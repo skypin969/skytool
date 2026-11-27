@@ -87,7 +87,7 @@ baris_rom() {
 cek_folder_rom() {
     local dir="$1" skrip
     [ -d "$dir/images" ] || return 1
-    for skrip in flash_all.sh flash_all_lock.sh flash_all_except_data_storage.sh flash_all_except_storage.sh; do
+    for skrip in flash_all.sh flash_all_lock.sh flash_all_except_data_storage.sh; do
         [ -f "$dir/$skrip" ] && return 0
     done
     return 1
@@ -385,7 +385,7 @@ pilih_cara_flash() {
     local -a skrip=() nama=() ket=()
     while true; do
         skrip=(); nama=(); ket=()
-        for stem in flash_all flash_all_lock flash_all_except_data_storage flash_all_except_storage; do
+        for stem in flash_all flash_all_lock flash_all_except_data_storage; do
             [ -f "$folder/$stem.sh" ] || continue
             skrip+=("$stem.sh")
             case "$stem" in
@@ -395,8 +395,6 @@ pilih_cara_flash() {
                     nama+=("$(t "Flash semua + kunci bootloader" "Flash all + lock bootloader")"); ket+=("$(t "Bootloader dikunci lagi, data terhapus." "Bootloader locked again, data wiped.")") ;;
                 flash_all_except_data_storage)
                     nama+=("$(t "Flash tanpa hapus data" "Flash without wiping data")"); ket+=("$(t "Data tidak terhapus setelah flash." "Data is not wiped after flashing.")") ;;
-                flash_all_except_storage)
-                    nama+=("$(t "Flash tanpa penyimpanan" "Flash without storage")"); ket+=("$(t "Bagian penyimpanan tidak ditulis." "Storage section is not written.")") ;;
             esac
         done
 
