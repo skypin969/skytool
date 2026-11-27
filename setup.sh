@@ -15,6 +15,8 @@ ORANYE_TERANG="${ESC}[38;2;255;178;122m"
 ABU_TEKS="${ESC}[38;2;170;176;190m"
 ABU_GELAP="${ESC}[38;2;122;128;144m"
 MERAH="${ESC}[38;2;226;75;74m"
+# Nomor gambar layar, dipakai untuk menggerakkan kilatan abu-abu pada bilah progres
+KILAT=0
 
 cetak() {
     printf '%s\033[K\n' "$1"
@@ -39,19 +41,28 @@ ulangi() {
 
 # Menyusun isi layar di memori. Memakai TOTAL, LABEL, STATUS, dan PESAN dari fungsi pemanggil.
 susun_layar() {
-    local selesai=0 persen isi j bar
+    local selesai=0 persen isi j bar pos
     for ((j = 0; j < TOTAL; j++)); do
         if [ "${STATUS[$j]}" = "ok" ]; then
             selesai=$((selesai + 1))
         fi
     done
     persen=$(( selesai * 100 / TOTAL ))
-    # Bilah 10 kotak tanpa spasi di dalam kurung; kotak yang sudah terisi memakai tanda pagar oranye
+    # Bilah 10 kotak tanpa spasi di dalam kurung; kotak yang sudah terisi memakai tanda pagar oranye.
+    # Dua kotak abu-abu bergerak di atas kotak yang sudah terisi (tanda pagar tidak ikut bergerak).
     isi=$(( persen / 10 ))
+    pos=0
+    if [ "$isi" -gt 0 ]; then
+        pos=$(( KILAT % isi ))
+    fi
     bar=""
     for ((j = 0; j < 10; j++)); do
         if [ "$j" -lt "$isi" ]; then
-            bar="${bar}${ORANYE}#"
+            if [ "$j" -ge "$pos" ] && [ "$j" -lt $(( pos + 2 )) ]; then
+                bar="${bar}${ABU_GELAP}#"
+            else
+                bar="${bar}${ORANYE}#"
+            fi
         else
             bar="${bar} "
         fi
@@ -82,6 +93,7 @@ susun_layar() {
 # Layar disusun dulu di memori, lalu dicetak sekali sekaligus (supaya tidak berkedip).
 gambar_layar() {
     local isi
+    KILAT=$(( KILAT + 1 ))
     isi=$(susun_layar)
     printf '\033[H%s' "$isi"
 }
@@ -98,7 +110,7 @@ jalankan_langkah() {
     pid=$!
     while kill -0 "$pid" 2>/dev/null; do
         gambar_layar
-        jeda 0.5
+        jeda 0.2
     done
     if wait "$pid"; then
         STATUS[$idx]="ok"
