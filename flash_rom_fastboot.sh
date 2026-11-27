@@ -189,8 +189,12 @@ gambar_progres() {
     # Kembali ke posisi kursor yang disimpan, lalu timpa baris progres (tanpa menghapus layar: tidak berkedip)
     printf '%s8' "$ESC"
     cetak "${PUTIH}$(t "MENGEKSTRAK: " "EXTRACTING: ")${ORANYE}${nama}${RESET}"
+    # Satu baris kosong antara nama arsip dan bar progres
+    cetak ""
     cetak "${PUTIH}[${bar}${PUTIH}]  [  ${ORANYE}${persen}%${PUTIH}  ]  [  ${ORANYE}$(awk -v a="$selesai_b" -v b="$total_b" 'BEGIN{printf "%.1f GB / %.1f GB", a/1073741824, b/1073741824}')${PUTIH}  ]${RESET}"
     cetak "${PUTIH}[  ${ORANYE}$(awk -v k="$kecepatan" 'BEGIN{printf "%.1f MB/s", k/1048576}')${PUTIH}  ]  [  ${ORANYE}$(t "sisa ± ${sisa} detik" "left ± ${sisa} sec")${PUTIH}  ]${RESET}"
+    # Satu baris kosong di bawah progres
+    cetak ""
 }
 
 # Mengekstrak satu file .tgz ke folder <nama>_extracted di lokasi yang sama, seperti MiTool.
@@ -212,8 +216,10 @@ ekstrak_rom_inti() {
     dest="$dir/${stem}_extracted"
 
     # Langsung tampilkan status, supaya layar tidak terlihat macet saat arsip diperiksa
+    # Satu baris kosong di atas, lalu posisi disimpan di bawahnya supaya progres tidak menimpa baris kosong itu
+    cetak ""
     printf '%s7' "$ESC"
-    printf '%s8%s[J' "$ESC" "$ESC"
+    printf '%s[J' "$ESC"
     cetak "${PUTIH}$(t "MENGEKSTRAK: " "EXTRACTING: ")${ORANYE}$(basename "$tgz")${RESET}"
     cetak "${PUTIH}$(t "Memeriksa isi arsip, mohon tunggu..." "Checking archive, please wait...")${RESET}"
 
