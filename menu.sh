@@ -56,7 +56,7 @@ cetak_logo() {
 
 # Satu baris menu: nomor dan nama dengan lebar tetap 27 karakter supaya kurung tutup sejajar
 baris_menu() {
-    printf '%s' "${PUTIH}[  ${ORANYE}$1${PUTIH}  ] [  ${ORANYE}$(printf '%-27s' "$2")${PUTIH}  ]${RESET}"
+    printf '%s' "${PUTIH}[  ${ORANYE}$1${PUTIH}  ] [  ${ORANYE}$(printf '%-22s' "$2")${PUTIH}  ]${RESET}"
 }
 
 # Layar menu utama: tiga pilihan dan KELUAR
