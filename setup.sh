@@ -150,13 +150,10 @@ pasang_font() {
     termux-reload-settings 2>/dev/null || true
 }
 
-# Prompt Termux dibuat seperti [ ~$  ] berwarna oranye (ditulis ke .bashrc sekali saja)
-pasang_prompt() {
-    if ! grep -q "SKYTOOL_PROMPT" "$HOME/.bashrc" 2>/dev/null; then
-        cat >> "$HOME/.bashrc" << 'EOF'
-# SKYTOOL_PROMPT
-PS1='\[\e[38;2;255;105;0m\][ \w\$  ]\[\e[0m\] '
-EOF
+# Prompt Termux tetap bawaan (~ $). Pengaturan prompt dari versi sebelumnya dihapus kalau masih ada.
+pulihkan_prompt() {
+    if [ -f "$HOME/.bashrc" ] && grep -q "SKYTOOL_PROMPT" "$HOME/.bashrc"; then
+        sed -i '/SKYTOOL_PROMPT/,+1d' "$HOME/.bashrc"
     fi
 }
 
@@ -180,8 +177,7 @@ main() {
 
     # Font dan prompt dipasang dulu, sebelum layar pertama digambar
     pasang_font || true
-    pasang_prompt || true
-    PS1='\[\e[38;2;255;105;0m\][ \w\$  ]\[\e[0m\] '
+    pulihkan_prompt || true
 
     clear 2>/dev/null || true
 
