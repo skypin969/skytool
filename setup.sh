@@ -59,7 +59,7 @@ baris_stripe() {
 }
 
 # Menggambar seluruh layar dari awal setiap kali (supaya tidak ada baris tertinggal)
-gambar_layar() {
+susun_layar() {
     local selesai=0 persen isi j bar kursor
     for ((j = 0; j < TOTAL; j++)); do
         if [ "${STATUS[$j]}" = "ok" ]; then
@@ -68,7 +68,6 @@ gambar_layar() {
     done
     persen=$(( selesai * 100 / TOTAL ))
 
-    printf '%s' "${ESC}[H"
     cetak ""
     cetak "${PUTIH}SKY${ORANYE}TOOL${RESET}$(printf '%*s' 22 '')${ABU}${VERSI}${RESET}"
     cetak ""
@@ -111,6 +110,13 @@ gambar_layar() {
     printf '\033[J'
 }
 
+# Layar disusun dulu di memori, lalu dicetak sekali sekaligus (supaya tidak berkedip).
+gambar_layar() {
+    local isi
+    isi=$(susun_layar)
+    printf '\033[H%s' "$isi"
+}
+
 # Menjalankan satu langkah di latar belakang sambil layar digambar ulang.
 # Argumen: nomor langkah, lalu perintah yang dijalankan.
 jalankan_langkah() {
@@ -126,7 +132,7 @@ jalankan_langkah() {
         SPIN="${frames[$((i % 4))]}"
         i=$((i + 1))
         gambar_layar
-        jeda 0.15
+        jeda 0.2
     done
     if wait "$pid"; then
         STATUS[$idx]="ok"
@@ -208,7 +214,7 @@ if [ ! -d "$HOME/storage" ]; then
     termux-setup-storage || true
     for _ in $(seq 1 60); do
         [ -d "$HOME/storage" ] && break
-        sleep 1
+        jeda 1
     done
     PESAN=""
 fi
