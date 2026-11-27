@@ -52,4 +52,4 @@ Setelah `fastboot devices` sudah menampilkan HP, jalankan perintah ini di Termux
 source <(curl -sS "https://raw.githubusercontent.com/skypin969/skytool/main/menu.sh")
 ```
 
-Menu `1` (Flash ROM Fastboot tgz) menampilkan file `.tgz` yang ada di folder Download, dan ROM yang sudah diekstrak dari file `.tgz` itu. Langkah flash untuk menu ini belum dibuat.
+Menu `1` (Flash ROM Fastboot tgz) menampilkan file `.tgz` yang ada di folder Download, dan folder ROM yang sudah diekstrak. Folder ROM dikenali dari isinya (ada folder `images` dan skrip `flash_all*.sh`), jadi tetap terbaca walaupun namanya diubah. Langkah flash untuk menu ini belum dibuat.

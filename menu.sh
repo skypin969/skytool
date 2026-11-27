@@ -28,28 +28,37 @@ cetak() {
     printf '%s\033[K\n' "$1"
 }
 
-# Mengisi daftar: semua file .tgz di folder Download, lalu ROM yang sudah diekstrak
-# (folder dengan nama yang sama dengan file .tgz).
+# Sama seperti MiTool (rom.py): folder ROM dikenali dari ISINYA, bukan dari namanya.
+# Folder dianggap ROM fastboot kalau ada folder "images" dan salah satu skrip flash_all*.sh.
+cek_folder_rom() {
+    local dir="$1" skrip
+    [ -d "$dir/images" ] || return 1
+    for skrip in flash_all.sh flash_all_lock.sh flash_all_except_data_storage.sh flash_all_except_storage.sh; do
+        [ -f "$dir/$skrip" ] && return 0
+    done
+    return 1
+}
+
+# Mengisi daftar: semua file .tgz, lalu semua folder ROM, dicari berulang di dalam folder Download.
+# Folder bernama Android dilewati, sama seperti MiTool.
 muat_daftar() {
-    local f nama
+    local jalur
     MENU_NAMA=()
     MENU_JALUR=()
     MENU_JENIS=()
-    shopt -s nullglob
-    for f in "$MENU_DL"/*.tgz; do
-        MENU_NAMA+=("$(basename "$f")")
-        MENU_JALUR+=("$f")
+    [ -d "$MENU_DL" ] || return 0
+    while IFS= read -r -d '' jalur; do
+        MENU_NAMA+=("$(basename "$jalur")")
+        MENU_JALUR+=("$jalur")
         MENU_JENIS+=("tgz")
-    done
-    for f in "$MENU_DL"/*.tgz; do
-        nama=$(basename "$f" .tgz)
-        if [ -d "$MENU_DL/$nama" ]; then
-            MENU_NAMA+=("$nama")
-            MENU_JALUR+=("$MENU_DL/$nama")
+    done < <(find "$MENU_DL" -path '*/Android' -prune -o -type f -name '*.tgz' -print0 | sort -z)
+    while IFS= read -r -d '' jalur; do
+        if cek_folder_rom "$jalur"; then
+            MENU_NAMA+=("$(basename "$jalur")")
+            MENU_JALUR+=("$jalur")
             MENU_JENIS+=("ekstrak")
         fi
-    done
-    shopt -u nullglob
+    done < <(find "$MENU_DL" -path '*/Android' -prune -o -type d -print0 | sort -z)
 }
 
 # Menggambar seluruh layar menu
