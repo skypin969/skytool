@@ -167,6 +167,25 @@ jalankan_semua() {
     jalankan_langkah 6 pasang_termux_adb || return 1
 }
 
+# Membungkus perintah fastboot di sesi ini agar hasil "fastboot devices" tampil seperti contoh:
+# [ NOMOR    fastboot ] dengan kurung putih dan tulisan oranye.
+# Pembungkus ini hanya ada di sesi ini, tidak ditulis ke .bashrc.
+pasang_pembungkus_fastboot() {
+    fastboot() {
+        local keluaran rc=0 serial mode
+        keluaran=$(command fastboot "$@" 2>&1) || rc=$?
+        if [ "${1:-}" = "devices" ] && [ -n "$keluaran" ]; then
+            while read -r serial mode; do
+                [ -z "$serial" ] && continue
+                printf '\033[38;2;255;255;255m[ \033[38;2;255;105;0m%s    %s\033[38;2;255;255;255m ]\033[0m\n' "$serial" "$mode"
+            done <<< "$keluaran"
+        elif [ -n "$keluaran" ]; then
+            printf '%s\n' "$keluaran"
+        fi
+        return $rc
+    }
+}
+
 main() {
     local TOTAL=7 PESAN=""
     local -a LABEL=("izin penyimpanan" "arsitektur HP" "Termux:API" "apt update" "apt upgrade" "pasang python, git, libusb" "adb & fastboot (termux-adb)")
@@ -212,6 +231,7 @@ main() {
         # Setelah persiapan selesai, prompt di sesi ini berubah jadi [ ~$  ] dengan petunjuk abu-abu di sebelahnya.
         # Pengaturan ini tidak ditulis ke .bashrc, jadi saat Termux dibuka lagi prompt kembali ke bawaan.
         PS1='\[\e[38;2;255;105;0m\][ \w\$  ]\[\e[0m\] \[\e[38;2;122;128;144m\]Ketik : fastboot devices\[\e[0m\] '
+        pasang_pembungkus_fastboot
     fi
 
     printf '\033[?25h'
