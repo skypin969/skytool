@@ -122,19 +122,22 @@ gambar_layar() {
 jalankan_langkah() {
     local idx="$1"
     shift
-    local log pid rc=0 kontrol_job=""
+    local log rc_file pid rc
     STATUS[$idx]="run"
-    # Bash menulis "[1]+ Done ..." ke layar saat pekerjaan latar selesai. Itu dimatikan selama langkah berjalan.
-    case $- in *m*) kontrol_job=1; set +m ;; esac
     log=$(mktemp)
-    "$@" > "$log" 2>&1 &
+    rc_file=$(mktemp)
+    rm -f "$rc_file"
+    # Perintah dijalankan di latar belakang lalu langsung dilepas dari daftar pekerjaan bash (disown),
+    # supaya bash tidak menulis "[1]+ Done ..." ke layar. Kode keluarnya ditulis ke rc_file.
+    ( "$@" > "$log" 2>&1; echo $? > "$rc_file" ) &
     pid=$!
-    while kill -0 "$pid" 2>/dev/null; do
+    disown "$pid" 2>/dev/null
+    while [ ! -s "$rc_file" ]; do
         gambar_layar
         jeda 0.2
     done
-    wait "$pid" || rc=$?
-    [ -n "$kontrol_job" ] && set -m
+    rc=$(cat "$rc_file")
+    rm -f "$rc_file"
     if [ "$rc" -eq 0 ]; then
         STATUS[$idx]="ok"
         gambar_layar
