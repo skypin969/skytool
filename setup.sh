@@ -10,6 +10,7 @@ TOTAL=7
 ESC=$'\033'
 RESET="${ESC}[0m"
 # Warna sama dengan mockup (kode warna 24-bit)
+TEBAL="${ESC}[1m"
 PUTIH="${ESC}[38;2;255;255;255m"
 ORANYE="${ESC}[38;2;255;105;0m"
 ORANYE_TERANG="${ESC}[38;2;255;178;122m"
@@ -64,8 +65,8 @@ susun_layar() {
     done
 
     cetak ""
-    cetak "${PUTIH}SKY${ORANYE}TOOL${RESET} ${ABU_TEKS}${VERSI}${RESET}"
-    cetak "${ORANYE}MENYIAPKAN TERMUX${RESET}"
+    cetak "${TEBAL}${PUTIH}SKY${ORANYE}TOOL${RESET} ${ABU_TEKS}${VERSI}${RESET}"
+    cetak "${TEBAL}${ORANYE}MENYIAPKAN TERMUX${RESET}"
     cetak ""
     cetak "[${bar}${RESET}] ${persen}%  (${selesai}/${TOTAL})"
     cetak ""
