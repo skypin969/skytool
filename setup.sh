@@ -30,15 +30,15 @@ run_step() {
     local pid=$!
     while kill -0 "$pid" 2>/dev/null; do
         frame="${frames[$((i % 3))]}"
-        printf "\r  ${ORANYE}[ .. ]${RESET} %s %-3s" "$msg" "$frame"
+        printf "\r\033[2K  ${ORANYE}[ .. ]${RESET} %s %s" "$msg" "$frame"
         i=$((i + 1))
         sleep 0.5
     done
     if wait "$pid"; then
-        printf "\r  ${HIJAU}[ OK ]${RESET} %s          \n" "$msg"
+        printf "\r\033[2K  ${HIJAU}[ OK ]${RESET} %s\n" "$msg"
         rm -f "$log"
     else
-        printf "\r  ${MERAH}[ XX ]${RESET} %s          \n" "$msg"
+        printf "\r\033[2K  ${MERAH}[ XX ]${RESET} %s\n" "$msg"
         echo ""
         tail -n 20 "$log"
         rm -f "$log"
@@ -94,9 +94,7 @@ cek_fastboot() {
 tampil_judul
 
 # Langkah 1: izin penyimpanan (perlu tombol di layar HP, jadi tanpa animasi)
-printf "  ${ORANYE}[ .. ]${RESET} Izin penyimpanan"
 if [ ! -d "$HOME/storage" ]; then
-    echo ""
     echo "  Tekan Izinkan di layar HP."
     termux-setup-storage || true
     for _ in $(seq 1 30); do
@@ -105,18 +103,20 @@ if [ ! -d "$HOME/storage" ]; then
     done
 fi
 if [ ! -d "$HOME/storage" ]; then
-    printf "\r  ${MERAH}[ XX ]${RESET} Izin penyimpanan belum diberikan. Jalankan lagi perintah awal di README.\n"
+    printf "  ${MERAH}[ XX ]${RESET} Izin penyimpanan\n"
+    echo "  Jalankan lagi perintah awal di README."
     exit 1
 fi
-printf "\r  ${HIJAU}[ OK ]${RESET} Izin penyimpanan          \n"
+printf "  ${HIJAU}[ OK ]${RESET} Izin penyimpanan\n"
 
-# Langkah 2 sampai 7: setiap langkah tampil dengan animasi titik-titik
+# Langkah 2 sampai 7: setiap langkah tampil dengan animasi titik-titik.
+# Teks dibuat pendek supaya muat dalam satu baris di layar HP.
 run_step "Memeriksa arsitektur HP" cek_arsitektur
-run_step "Memeriksa aplikasi Termux:API" cek_termux_api
-run_step "Memperbarui daftar paket (apt update)" bash -c "yes | apt update"
-run_step "Memasang pembaruan paket (apt upgrade)" bash -c "yes | apt upgrade"
-run_step "Memasang python, git, termux-api, libusb" bash -c "yes | pkg install python git termux-api libusb"
-run_step "Memasang adb dan fastboot (termux-adb)" pasang_termux_adb
+run_step "Memeriksa Termux:API" cek_termux_api
+run_step "Memperbarui daftar paket" bash -c "yes | apt update"
+run_step "Memasang pembaruan paket" bash -c "yes | apt upgrade"
+run_step "Memasang python, git, libusb" bash -c "yes | pkg install python git termux-api libusb"
+run_step "Memasang adb & fastboot" pasang_termux_adb
 
 echo ""
 printf "  ${HIJAU}Persiapan selesai.${RESET}\n"
