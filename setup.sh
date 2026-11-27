@@ -182,6 +182,8 @@ pasang_pembungkus_fastboot() {
         elif [ -n "$keluaran" ]; then
             printf '%s\n' "$keluaran"
         fi
+        # Setelah perintah fastboot dijalankan, petunjuk hilang dan prompt kembali [ ~$  ]
+        PS1='\[\e[38;2;255;255;255m\][ \[\e[38;2;255;105;0m\]\w\$\[\e[38;2;255;255;255m\]  ]\[\e[0m\] '
         return $rc
     }
 }
@@ -230,7 +232,7 @@ main() {
     if [ "$rc" -eq 0 ]; then
         # Setelah persiapan selesai, prompt di sesi ini berubah jadi [ ~$  ] dengan petunjuk abu-abu di sebelahnya.
         # Pengaturan ini tidak ditulis ke .bashrc, jadi saat Termux dibuka lagi prompt kembali ke bawaan.
-        PS1='\[\e[38;2;255;105;0m\][ \w\$  ]\[\e[0m\] \[\e[38;2;122;128;144m\]Ketik : fastboot devices\[\e[0m\] '
+        PS1='\[\e[38;2;255;255;255m\][ \[\e[38;2;255;105;0m\]\w\$\[\e[38;2;255;255;255m\]  ]\[\e[0m\] \[\e[38;2;122;128;144m\]Ketik : fastboot devices\[\e[0m\] '
         pasang_pembungkus_fastboot
     fi
 
