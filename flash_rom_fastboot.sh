@@ -186,8 +186,8 @@ gambar_progres() {
     if [ "$kecepatan" -gt 0 ]; then
         sisa=$(( (total_b - selesai_b) / kecepatan ))
     fi
-    # Kembali ke posisi kursor yang disimpan di awal ekstrak, lalu hapus isi di bawahnya
-    printf '%s8%s[J' "$ESC" "$ESC"
+    # Kembali ke posisi kursor yang disimpan, lalu timpa baris progres (tanpa menghapus layar: tidak berkedip)
+    printf '%s8' "$ESC"
     cetak "${PUTIH}$(t "MENGEKSTRAK: " "EXTRACTING: ")${ORANYE}${nama}${RESET}"
     cetak "${PUTIH}[${bar}${PUTIH}]  [  ${ORANYE}${persen}%${PUTIH}  ]  [  ${ORANYE}$(awk -v a="$selesai_b" -v b="$total_b" 'BEGIN{printf "%.1f GB / %.1f GB", a/1073741824, b/1073741824}')${PUTIH}  ]${RESET}"
     cetak "${PUTIH}[  ${ORANYE}$(awk -v k="$kecepatan" 'BEGIN{printf "%.1f MB/s", k/1048576}')${PUTIH}  ]  [  ${ORANYE}$(t "sisa ± ${sisa} detik" "left ± ${sisa} sec")${PUTIH}  ]${RESET}"
@@ -195,7 +195,17 @@ gambar_progres() {
 
 # Mengekstrak satu file .tgz ke folder <nama>_extracted di lokasi yang sama, seperti MiTool.
 # Argumen: lokasi file .tgz.
+# Kursor disembunyikan selama ekstrak supaya tidak ada kotak putih yang berkedip di bawah progres
 ekstrak_rom() {
+    local hasil
+    printf '\033[?25l'
+    ekstrak_rom_inti "$@"
+    hasil=$?
+    printf '\033[?25h'
+    return $hasil
+}
+
+ekstrak_rom_inti() {
     local tgz="$1" dir stem dest total salah list rc_file pid mulai sekarang selesai_b rc
     dir=$(dirname "$tgz")
     stem=$(basename "$tgz" .tgz)
