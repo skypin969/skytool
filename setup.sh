@@ -39,33 +39,6 @@ ulangi() {
     return 1
 }
 
-# Baris langkah yang sedang berjalan: [  OK  ] [  nama  ]. Kilatan abu-abu tiga huruf bergerak
-# dari kiri ke kanan lalu mengulang. Kurung tetap putih, tulisan di dalamnya oranye muda.
-baris_kilat() {
-    local label="$1" txt col i k total mulai out
-    local -a huruf=() warna=()
-    local -a segmen=("[  " "$PUTIH" "OK" "$ORANYE_TERANG" "  ] " "$PUTIH" "[  " "$PUTIH" "$label" "$ORANYE_TERANG" "  ]" "$PUTIH")
-    for ((k = 0; k < ${#segmen[@]}; k += 2)); do
-        txt="${segmen[k]}"
-        col="${segmen[k+1]}"
-        for ((i = 0; i < ${#txt}; i++)); do
-            huruf+=("${txt:i:1}")
-            warna+=("$col")
-        done
-    done
-    total=${#huruf[@]}
-    mulai=$(( KILAT % (total + 3) ))
-    out=""
-    for ((i = 0; i < total; i++)); do
-        if [ "$i" -ge $(( mulai - 2 )) ] && [ "$i" -le "$mulai" ]; then
-            col="$ABU_GELAP"
-        else
-            col="${warna[i]}"
-        fi
-        out="${out}${col}${huruf[i]}"
-    done
-    printf '%s%s' "$out" "$RESET"
-}
 
 # Menyusun isi layar di memori. Memakai TOTAL, LABEL, STATUS, dan PESAN dari fungsi pemanggil.
 susun_layar() {
@@ -106,7 +79,7 @@ susun_layar() {
     for ((j = 0; j < TOTAL; j++)); do
         case "${STATUS[$j]}" in
             ok)   cetak "${PUTIH}[  ${ORANYE}OK${PUTIH}  ] [  ${ORANYE}${LABEL[$j]}${PUTIH}  ]${RESET}" ;;
-            run)  cetak "$(baris_kilat "${LABEL[$j]}")" ;;
+            run)  cetak "${PUTIH}[  ${ORANYE_TERANG}OK${PUTIH}  ] [  ${ORANYE_TERANG}${LABEL[$j]}${PUTIH}  ]${RESET}" ;;
             fail) cetak "${MERAH}[  ] [  ${LABEL[$j]}  ]${RESET}" ;;
             *)    cetak "${ABU_GELAP}[  OK  ] [  ${LABEL[$j]}  ]${RESET}" ;;
         esac
@@ -239,6 +212,8 @@ pasang_pembungkus_fastboot() {
         elif [ -n "$keluaran" ]; then
             printf '%s\n' "$keluaran"
         fi
+        # Satu baris kosong setelah hasil, sama dengan jarak antara perintah dan hasilnya
+        [ -n "$keluaran" ] && printf '\n'
         # Setelah perintah fastboot dijalankan, petunjuk hilang dan prompt kembali [ ~$  ]
         PS1='\[\e[38;2;255;255;255m\][  \[\e[38;2;255;105;0m\]\w\$\[\e[38;2;255;255;255m\]  ]\[\e[0m\] '
         return $rc
