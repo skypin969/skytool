@@ -4,7 +4,7 @@
 
 A tool for Termux. This repo is still in its early stage.
 
-![Version](https://img.shields.io/badge/Version-v9.6.9-4c1) ![Platform](https://img.shields.io/badge/Platform-Termux-2a6fb0)
+![Version](https://img.shields.io/badge/Version-v9.6.9-4c1) ![Platform](https://img.shields.io/badge/Platform-Termux-2a6fb0) [![Telegram](https://img.shields.io/badge/Telegram-%40Skypin969-2aabee?logo=telegram&logoColor=white)](https://t.me/Skypin969)
 
 </div>
 
