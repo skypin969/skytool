@@ -15,8 +15,9 @@ ABU_TEKS="${ESC}[38;2;170;176;190m"
 ABU_GELAP="${ESC}[38;2;122;128;144m"
 MERAH="${ESC}[38;2;226;75;74m"
 
-# Folder Download di Termux (dibuat oleh termux-setup-storage pada setup.sh)
-MENU_DL="$HOME/storage/downloads"
+# Folder yang dicari, sama seperti MiTool (termux.py): seluruh penyimpanan bersama HP.
+# Dibuat oleh termux-setup-storage pada setup.sh.
+MENU_DL="$HOME/storage/shared"
 # Pesan singkat di bawah layar, misalnya kalau nomor salah
 MENU_PESAN=""
 # Isi daftar ROM: nama yang tampil, lokasi, dan jenisnya (tgz atau ekstrak)
@@ -101,7 +102,7 @@ gambar_menu_rom() {
     cetak "${TEBAL}${ORANYE}FLASH ROM FASTBOOT TGZ${RESET}"
     cetak ""
 
-    cetak "${ABU_TEKS}ROM .tgz di folder Download:${RESET}"
+    cetak "${ABU_TEKS}ROM .tgz di penyimpanan HP:${RESET}"
     for ((i = 0; i < ${#MENU_NAMA[@]}; i++)); do
         if [ "${MENU_JENIS[i]}" = "tgz" ]; then
             ada_tgz=1
