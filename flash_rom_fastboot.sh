@@ -283,7 +283,7 @@ judul_proses() {
     cetak ""
     cetak "${ABU_TEKS}${VERSI}${RESET}"
     cetak ""
-    cetak "${TEBAL}${ORANYE}$(t "ＰＲＯＳＥＳ ＦＬＡＳＨ ＲＯＭ" "ＦＬＡＳＨ ＲＯＭ ＰＲＯＧＲＥＳＳ")${RESET}"
+    cetak "${TEBAL}${ORANYE}$(t "ＰＲＯＳＥＳ ＦＬＡＳＨ ＲＯＭ" "ＰＲＯＣＥＳＳ ＦＬＡＳＨ ＲＯＭ")${RESET}"
     cetak ""
     cetak "${ABU_TEKS}$(t "ROM: " "ROM: ")${PUTIH}$(basename "$folder")${RESET}"
     cetak "${ABU_TEKS}$(t "Pilihan: " "Option: ")${PUTIH}${nama}${RESET}"
