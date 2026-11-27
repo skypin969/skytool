@@ -231,6 +231,7 @@ pasang_pembungkus_fastboot() {
         local keluaran rc=0 serial mode
         keluaran=$(command fastboot "$@" 2>&1) || rc=$?
         if [ "${1:-}" = "devices" ] && [ -n "$keluaran" ]; then
+            printf '\n'
             while read -r serial mode; do
                 [ -z "$serial" ] && continue
                 printf '\033[38;2;255;255;255m[ \033[38;2;255;105;0m%s    %s\033[38;2;255;255;255m ]\033[0m\n' "$serial" "$mode"
@@ -288,7 +289,9 @@ main() {
     if [ "$rc" -eq 0 ]; then
         # Setelah persiapan selesai, prompt di sesi ini berubah jadi [ ~$  ] dengan petunjuk abu-abu di sebelahnya.
         # Pengaturan ini tidak ditulis ke .bashrc, jadi saat Termux dibuka lagi prompt kembali ke bawaan.
-        PS1='\[\e[38;2;255;255;255m\][  \[\e[38;2;255;105;0m\]\w\$\[\e[38;2;255;255;255m\]  ]\[\e[0m\] \[\e[38;2;122;128;144m\]Ketik : fastboot devices\[\e[0m\] '
+        # Petunjuk ditulis di baris sendiri di atas prompt, bukan di dalam prompt
+        printf '%s\n' "${ABU_GELAP}Ketik : fastboot devices${RESET}"
+        PS1='\[\e[38;2;255;255;255m\][  \[\e[38;2;255;105;0m\]\w\$\[\e[38;2;255;255;255m\]  ]\[\e[0m\] '
         pasang_pembungkus_fastboot
     fi
 
