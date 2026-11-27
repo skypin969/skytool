@@ -72,10 +72,10 @@ susun_layar() {
     cetak ""
     for ((j = 0; j < TOTAL; j++)); do
         case "${STATUS[$j]}" in
-            ok)   cetak "  ${PUTIH}[${RESET} ${ORANYE}OK${RESET} ${PUTIH}]${RESET} ${PUTIH}${LABEL[$j]}${RESET}" ;;
-            run)  cetak "  ${ORANYE_TERANG}[ .. ] ${LABEL[$j]}${RESET}" ;;
-            fail) cetak "  ${MERAH}[ XX ] ${LABEL[$j]}${RESET}" ;;
-            *)    cetak "  ${ABU_GELAP}[    ] ${LABEL[$j]}${RESET}" ;;
+            ok)   cetak "  ${PUTIH}[  ${RESET}${ORANYE}${LABEL[$j]}${RESET}${PUTIH}  ]${RESET}" ;;
+            run)  cetak "  ${ORANYE_TERANG}[  ${LABEL[$j]}  ]${RESET}" ;;
+            fail) cetak "  ${MERAH}[  ${LABEL[$j]}  ]${RESET}" ;;
+            *)    cetak "  ${ABU_GELAP}[  ${LABEL[$j]}  ]${RESET}" ;;
         esac
     done
     if [ -n "$PESAN" ]; then
