@@ -1,6 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # SKYTOOL menu v9.6.9
 # Menu utama SKYTOOL. Dijalankan setelah perintah `fastboot devices` berhasil.
+# Setiap pilihan membuka skrip sendiri dari repo (misalnya pilihan 1 membuka flash_rom_fastboot.sh).
 # Aman dijalankan lewat `source` di sesi Termux: tidak memakai set -e, tidak memakai exit,
 # dan tidak memasang trap, supaya error tidak menutup Termux.
 
@@ -15,15 +16,10 @@ ABU_TEKS="${ESC}[38;2;170;176;190m"
 ABU_GELAP="${ESC}[38;2;122;128;144m"
 MERAH="${ESC}[38;2;226;75;74m"
 
-# Folder yang dicari, sama seperti MiTool (termux.py): seluruh penyimpanan bersama HP.
-# Dibuat oleh termux-setup-storage pada setup.sh.
-MENU_DL="$HOME/storage/shared"
-# Pesan singkat di bawah layar, misalnya kalau nomor salah
+# Alamat repo tempat skrip pilihan diambil. Bisa diganti lewat SKYTOOL_BASE untuk uji coba.
+SKYTOOL_BASE="${SKYTOOL_BASE:-https://raw.githubusercontent.com/skypin969/skytool/main}"
+# Pesan singkat di bawah layar, misalnya kalau skrip belum ada
 MENU_PESAN=""
-# Isi daftar ROM: nama yang tampil, lokasi, dan jenisnya (tgz atau ekstrak)
-MENU_NAMA=()
-MENU_JALUR=()
-MENU_JENIS=()
 
 cetak() {
     printf '%s\033[K\n' "$1"
@@ -32,43 +28,6 @@ cetak() {
 # Satu baris menu: nomor dan nama dengan lebar tetap 27 karakter supaya kurung tutup sejajar
 baris_menu() {
     printf '%s' "${PUTIH}[  ${ORANYE}$1${PUTIH}  ] [  ${ORANYE}$(printf '%-27s' "$2")${PUTIH}  ]${RESET}"
-}
-
-# Sama seperti MiTool (rom.py): folder ROM dikenali dari ISINYA, bukan dari namanya.
-# Folder dianggap ROM fastboot kalau ada folder "images" dan salah satu skrip flash_all*.sh.
-cek_folder_rom() {
-    local dir="$1" skrip
-    [ -d "$dir/images" ] || return 1
-    for skrip in flash_all.sh flash_all_lock.sh flash_all_except_data_storage.sh flash_all_except_storage.sh; do
-        [ -f "$dir/$skrip" ] && return 0
-    done
-    return 1
-}
-
-# Mengisi daftar: semua file .tgz, lalu semua folder ROM, dicari berulang di dalam folder Download.
-# Folder bernama Android dilewati, sama seperti MiTool.
-muat_daftar() {
-    local jalur
-    MENU_NAMA=()
-    MENU_JALUR=()
-    MENU_JENIS=()
-    [ -d "$MENU_DL" ] || return 0
-    # ~/storage/downloads adalah symlink ke /sdcard/Download. find tidak mengikuti symlink
-    # di titik awal, jadi alamat aslinya dipakai supaya isi folder ikut terbaca.
-    local asli
-    asli=$(readlink -f "$MENU_DL") || asli="$MENU_DL"
-    while IFS= read -r -d '' jalur; do
-        MENU_NAMA+=("$(basename "$jalur")")
-        MENU_JALUR+=("$jalur")
-        MENU_JENIS+=("tgz")
-    done < <(find "$asli" -path '*/Android' -prune -o -type f -name '*.tgz' -print0 | sort -z)
-    while IFS= read -r -d '' jalur; do
-        if cek_folder_rom "$jalur"; then
-            MENU_NAMA+=("$(basename "$jalur")")
-            MENU_JALUR+=("$jalur")
-            MENU_JENIS+=("ekstrak")
-        fi
-    done < <(find "$asli" -path '*/Android' -prune -o -type d -print0 | sort -z)
 }
 
 # Layar menu utama: tiga pilihan dan KELUAR
@@ -92,77 +51,15 @@ gambar_menu_utama() {
     printf '\033[J'
 }
 
-# Layar FLASH ROM FASTBOOT TGZ: daftar file .tgz dan folder ROM yang sudah diekstrak
-gambar_menu_rom() {
-    local i ada_tgz=0 ada_ekstrak=0
-    clear
-    cetak ""
-    cetak "${TEBAL}${PUTIH}ＳＫＹ${ORANYE}ＴＯＯＬ${RESET} ${ABU_TEKS}${VERSI}${RESET}"
-    cetak ""
-    cetak "${TEBAL}${ORANYE}FLASH ROM FASTBOOT TGZ${RESET}"
-    cetak ""
-
-    cetak "${ABU_TEKS}ROM .tgz di penyimpanan HP:${RESET}"
-    for ((i = 0; i < ${#MENU_NAMA[@]}; i++)); do
-        if [ "${MENU_JENIS[i]}" = "tgz" ]; then
-            ada_tgz=1
-            cetak "$(baris_menu $((i + 1)) "${MENU_NAMA[i]}")"
-        fi
-    done
-    if [ "$ada_tgz" -eq 0 ]; then
-        cetak "${ABU_GELAP}  (tidak ada file .tgz)${RESET}"
+# Mengambil skrip dari repo lalu menjalankannya. Argumen: nama file skrip (misalnya flash_rom_fastboot.sh).
+# Kalau skrip belum ada di repo atau HP tidak terhubung internet, layar menu tetap jalan.
+buka_skrip() {
+    local kode
+    if ! kode=$(curl -fsS "$SKYTOOL_BASE/$1" 2>/dev/null); then
+        MENU_PESAN="${ABU_TEKS}Menu ini belum dibuat, atau HP tidak terhubung internet.${RESET}"
+        return 1
     fi
-    cetak ""
-
-    cetak "${ABU_TEKS}ROM yang sudah diekstrak:${RESET}"
-    for ((i = 0; i < ${#MENU_NAMA[@]}; i++)); do
-        if [ "${MENU_JENIS[i]}" = "ekstrak" ]; then
-            ada_ekstrak=1
-            cetak "$(baris_menu $((i + 1)) "${MENU_NAMA[i]}")"
-        fi
-    done
-    if [ "$ada_ekstrak" -eq 0 ]; then
-        cetak "${ABU_GELAP}  (belum ada)${RESET}"
-    fi
-    cetak ""
-
-    cetak "${ABU_GELAP}[  0  ] [  kembali  ]${RESET}"
-    cetak ""
-    if [ -n "$MENU_PESAN" ]; then
-        cetak "$MENU_PESAN"
-        cetak ""
-    fi
-    printf '\033[J'
-}
-
-# Layar FLASH ROM FASTBOOT TGZ: membaca pilihan sampai pengguna memilih 0 (kembali)
-menu_rom() {
-    local pilihan
-    while true; do
-        muat_daftar
-        gambar_menu_rom
-        printf '%s' "${PUTIH}Pilih nomor, lalu Enter: ${RESET}"
-        read -r pilihan || return 0
-        MENU_PESAN=""
-        case "$pilihan" in
-            "")
-                ;;
-            0)
-                MENU_PESAN=""
-                return 0
-                ;;
-            *[!0-9]*)
-                MENU_PESAN="${MERAH}Ketik angka saja.${RESET}"
-                ;;
-            *)
-                if [ "$pilihan" -ge 1 ] && [ "$pilihan" -le "${#MENU_NAMA[@]}" ]; then
-                    MENU_PESAN="${ABU_TEKS}Langkah flash untuk pilihan ini belum dibuat.${RESET}"
-                else
-                    MENU_PESAN="${MERAH}Nomor itu tidak ada di daftar.${RESET}"
-                fi
-                ;;
-        esac
-    done
+    source <(printf '%s\n' "$kode")
 }
 
 # Layar menu utama: membaca pilihan sampai pengguna memilih 0 (KELUAR)
@@ -181,10 +78,13 @@ menu_utama() {
                 return 0
                 ;;
             1)
-                menu_rom
+                buka_skrip flash_rom_fastboot.sh
                 ;;
-            2|3)
-                MENU_PESAN="${ABU_TEKS}Menu ini belum dibuat.${RESET}"
+            2)
+                buka_skrip flash_file_img.sh
+                ;;
+            3)
+                buka_skrip adb_sideload.sh
                 ;;
             *)
                 MENU_PESAN="${MERAH}Nomor itu tidak ada di daftar.${RESET}"
