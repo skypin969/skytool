@@ -252,6 +252,68 @@ judul_layar() {
 
 # Pilihan cara flash untuk satu folder ROM yang sudah diekstrak.
 # Hanya skrip yang benar-benar ada di folder itu yang ditampilkan, seperti MiTool (flash.py).
+# Layar proses flash, sama dengan mockup yang disepakati
+judul_proses() {
+    local folder="$1" nama="$2"
+    clear
+    cetak ""
+    cetak_logo
+    cetak ""
+    cetak "${ABU_TEKS}${VERSI}${RESET}"
+    cetak ""
+    cetak "${TEBAL}${ORANYE}ＰＲＯＳＥＳ ＦＬＡＳＨ ＲＯＭ${RESET}"
+    cetak ""
+    cetak "${ABU_TEKS}ROM: ${PUTIH}$(basename "$folder")${RESET}"
+    cetak "${ABU_TEKS}Pilihan: ${PUTIH}${nama}${RESET}"
+    cetak ""
+}
+
+# Proses flash seperti MiTool: tunggu perangkat lewat "fastboot devices" (cek tiap 0,5 detik),
+# lalu jalankan skrip flash di folder ROM dengan bash. Keluaran skrip langsung tampil di layar.
+proses_flash() {
+    local folder="$1" skrip="$2" nama="$3" fb keluar_biasa keluar_semua rc
+    local -a bingkai=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+    local i=0
+    fb=$(type -P fastboot) || fb=""
+    if [ -z "$fb" ]; then
+        MENU_PESAN="${MERAH}fastboot tidak ditemukan. Pasang dulu lewat setup.${RESET}"
+        return 1
+    fi
+    judul_proses "$folder" "$nama"
+    cetak "${PUTIH}Ensure you're in Fastboot mode${RESET}"
+    cetak ""
+    printf '%s7' "$ESC"
+    while true; do
+        printf '%s8%s[J' "$ESC" "$ESC"
+        keluar_biasa=$(timeout 5 "$fb" devices 2>/dev/null)
+        keluar_semua=$(timeout 5 "$fb" devices 2>&1)
+        if [[ "${keluar_semua,,}" == *"no permissions"* ]]; then
+            cetak "${ORANYE}${bingkai[i]} ${ABU_TEKS}no permission, cek izin USB${RESET}"
+        elif [ -n "$(printf '%s' "$keluar_biasa" | tr -d '[:space:]')" ]; then
+            break
+        else
+            cetak "${ORANYE}${bingkai[i]} ${ABU_TEKS}device not connected...${RESET}"
+        fi
+        i=$(( (i + 1) % 10 ))
+        sleep 0.5
+    done
+
+    judul_proses "$folder" "$nama"
+    cetak "${HIJAU_REDUP}device connected${RESET}"
+    cetak ""
+    cetak "${PUTIH}Flashing process will start now...${RESET}"
+    cetak ""
+    rc=0
+    (cd "$folder" && PATH="$(dirname "$fb"):$PATH" bash "$folder/$skrip") || rc=$?
+    # Seperti MiTool: setelah skrip selesai tidak ada prompt tambahan, hasilnya langsung dicatat
+    if [ "$rc" -eq 0 ]; then
+        MENU_PESAN="${HIJAU_REDUP}Flashing complete${RESET}"
+    else
+        MENU_PESAN="${MERAH}Flashing failed (exit code ${rc})${RESET}"
+    fi
+    return 0
+}
+
 pilih_cara_flash() {
     local folder="$1" pilihan i stem
     local -a skrip=() nama=() ket=()
@@ -262,7 +324,7 @@ pilih_cara_flash() {
             skrip+=("$stem.sh")
             case "$stem" in
                 flash_all)
-                    nama+=("Flash semua"); ket+=("Bootloader tetap terbuka.") ;;
+                    nama+=("Flash all"); ket+=("Bootloader tetap terbuka.") ;;
                 flash_all_lock)
                     nama+=("Flash semua + kunci bootloader"); ket+=("Bootloader dikunci lagi setelah flash.") ;;
                 flash_all_except_data_storage)
@@ -305,7 +367,7 @@ pilih_cara_flash() {
                 ;;
             *)
                 if [ "$pilihan" -ge 1 ] && [ "$pilihan" -le "${#skrip[@]}" ]; then
-                    MENU_PESAN="${ABU_TEKS}Proses flash untuk pilihan ini belum dibuat.${RESET}"
+                    proses_flash "$folder" "${skrip[pilihan - 1]}" "${nama[pilihan - 1]}"
                 else
                     MENU_PESAN="${MERAH}Nomor itu tidak ada di daftar.${RESET}"
                 fi
