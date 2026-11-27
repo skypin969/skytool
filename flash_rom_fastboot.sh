@@ -274,7 +274,7 @@ ekstrak_rom_inti() {
         return 1
     fi
     EKSTRAK_HASIL="$dest"
-    MENU_PESAN="${PUTIH}[  ${ORANYE}OK${PUTIH}  ] [  ${ORANYE}$(t "ekstrak selesai: " "extraction done: ")$(basename "$dest")${PUTIH}  ]${RESET}"
+    MENU_PESAN="${PUTIH}[  ${ORANYE}OK${PUTIH}  ] [  ${ORANYE}$(t "ekstrak selesai" "extraction done")${PUTIH}  ] : ${ORANYE}$(basename "$dest")${RESET}"
     return 0
 }
 
@@ -390,11 +390,11 @@ pilih_cara_flash() {
             skrip+=("$stem.sh")
             case "$stem" in
                 flash_all)
-                    nama+=("Flash all"); ket+=("$(t "Bootloader tetap terbuka." "Bootloader stays unlocked.")") ;;
+                    nama+=("Flash all"); ket+=("$(t "Bootloader tetap terbuka, data terhapus." "Bootloader stays unlocked, data is wiped.")") ;;
                 flash_all_lock)
-                    nama+=("$(t "Flash semua + kunci bootloader" "Flash all + lock bootloader")"); ket+=("$(t "Bootloader dikunci lagi setelah flash." "Bootloader is locked again after flashing.")") ;;
+                    nama+=("$(t "Flash semua + kunci bootloader" "Flash all + lock bootloader")"); ket+=("$(t "Bootloader dikunci setelah flash, data terhapus." "Bootloader is locked after flashing, data is wiped.")") ;;
                 flash_all_except_data_storage)
-                    nama+=("$(t "Flash tanpa hapus data" "Flash without wiping data")"); ket+=("$(t "Foto dan aplikasi tetap ada." "Photos and apps are kept.")") ;;
+                    nama+=("$(t "Flash tanpa hapus data" "Flash without wiping data")"); ket+=("$(t "Data tidak terhapus setelah flash." "Data is not wiped after flashing.")") ;;
                 flash_all_except_storage)
                     nama+=("$(t "Flash tanpa penyimpanan" "Flash without storage")"); ket+=("$(t "Bagian penyimpanan tidak ditulis." "Storage section is not written.")") ;;
             esac
