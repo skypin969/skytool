@@ -110,6 +110,7 @@ menu_utama() {
                 ;;
             1)
                 buka_skrip flash_rom_fastboot.sh
+                [ -n "${SKYTOOL_SELESAI:-}" ] && return 0
                 ;;
             2)
                 buka_skrip flash_file_img.sh
@@ -124,4 +125,6 @@ menu_utama() {
     done
 }
 
+# Tanda selesai dari flash hanya berlaku untuk satu kali jalan
+unset SKYTOOL_SELESAI
 menu_utama

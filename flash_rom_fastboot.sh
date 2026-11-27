@@ -28,6 +28,8 @@ MENU_JALUR=()
 MENU_JENIS=()
 # Folder hasil ekstrak terakhir, dipakai untuk langsung membuka pilihan cara flash
 EKSTRAK_HASIL=""
+# Diisi 1 setelah proses flash selesai: menu berhenti dan hasil tetap terlihat, seperti MiTool
+SKYTOOL_SELESAI=""
 
 # Jumlah baris yang sudah ditulis di layar, dipakai untuk menentukan posisi progres ekstrak
 BARIS=0
@@ -292,16 +294,39 @@ judul_proses() {
 
 # Proses flash seperti MiTool: tunggu perangkat lewat "fastboot devices" (cek tiap 0,5 detik),
 # lalu jalankan skrip flash di folder ROM dengan bash. Keluaran skrip langsung tampil di layar.
+# Kalau fastboot belum ada, pasang termux-adb (sekali saja), sama seperti MiTool di Termux
+pasang_fastboot_otomatis() {
+    local prefix="${PREFIX:-/data/data/com.termux/files/usr}"
+    if [ ! -f "$prefix/etc/apt/sources.list.d/termux-adb.list" ]; then
+        mkdir -p "$prefix/etc/apt/sources.list.d" "$prefix/etc/apt/trusted.gpg.d"
+        echo "deb https://nohajc.github.io termux extras" > "$prefix/etc/apt/sources.list.d/termux-adb.list"
+        curl -fsSL -o "$prefix/etc/apt/trusted.gpg.d/nohajc.gpg" https://nohajc.github.io/nohajc.gpg || return 1
+        yes | apt update > /dev/null 2>&1
+    fi
+    DEBIAN_FRONTEND=noninteractive apt -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold install termux-adb < /dev/null > /dev/null 2>&1 || return 1
+    ln -sf "$prefix/bin/termux-fastboot" "$prefix/bin/fastboot"
+    ln -sf "$prefix/bin/termux-adb" "$prefix/bin/adb"
+}
+
 proses_flash() {
     local folder="$1" skrip="$2" nama="$3" fb keluar_biasa keluar_semua rc
     local -a bingkai=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
     local i=0
     fb=$(type -P fastboot) || fb=""
+    judul_proses "$folder" "$nama"
     if [ -z "$fb" ]; then
-        MENU_PESAN="${MERAH}$(t "fastboot tidak ditemukan. Pasang dulu lewat setup." "fastboot not found. Install it through setup first.")${RESET}"
+        cetak "$(t "fastboot belum ada, memasang termux-adb..." "fastboot not found, installing termux-adb...")"
+        cetak ""
+        if pasang_fastboot_otomatis; then
+            hash -r
+            fb=$(type -P fastboot) || fb=""
+        fi
+        judul_proses "$folder" "$nama"
+    fi
+    if [ -z "$fb" ]; then
+        MENU_PESAN="${MERAH}$(t "fastboot gagal dipasang. Coba jalankan lagi setup." "fastboot could not be installed. Try running setup again.")${RESET}"
         return 1
     fi
-    judul_proses "$folder" "$nama"
     cetak "${PUTIH}Ensure you're in Fastboot mode${RESET}"
     cetak ""
     printf '%s7' "$ESC"
@@ -310,7 +335,7 @@ proses_flash() {
         keluar_biasa=$(timeout 5 "$fb" devices 2>/dev/null)
         keluar_semua=$(timeout 5 "$fb" devices 2>&1)
         if [[ "${keluar_semua,,}" == *"no permissions"* ]]; then
-            cetak "${ORANYE}${bingkai[i]} ${ABU_TEKS}no permission, check USB access${RESET}"
+            cetak "${ORANYE}${bingkai[i]} ${ABU_TEKS}$(t "Izin USB belum diberikan. Izinkan akses di HP, lalu tunggu." "USB permission not granted. Allow access on the phone, then wait.")${RESET}"
         elif [ -n "$(printf '%s' "$keluar_biasa" | tr -d '[:space:]')" ]; then
             break
         else
@@ -328,11 +353,14 @@ proses_flash() {
     rc=0
     (cd "$folder" && PATH="$(dirname "$fb"):$PATH" bash "$folder/$skrip") || rc=$?
     # Seperti MiTool: setelah skrip selesai tidak ada prompt tambahan, hasilnya langsung dicatat
+    cetak ""
     if [ "$rc" -eq 0 ]; then
-        MENU_PESAN="${HIJAU_REDUP}Flashing complete${RESET}"
+        cetak "${HIJAU_REDUP}Flashing complete${RESET}"
     else
-        MENU_PESAN="${MERAH}Flashing failed (exit code ${rc})${RESET}"
+        cetak "${MERAH}Flashing failed (exit code ${rc})${RESET}"
     fi
+    # Hasil tetap di layar: menu tidak digambar ulang dan tidak kembali ke daftar
+    SKYTOOL_SELESAI=1
     return 0
 }
 
@@ -390,6 +418,7 @@ pilih_cara_flash() {
             *)
                 if [ "$pilihan" -ge 1 ] && [ "$pilihan" -le "${#skrip[@]}" ]; then
                     proses_flash "$folder" "${skrip[pilihan - 1]}" "${nama[pilihan - 1]}"
+                    [ -n "$SKYTOOL_SELESAI" ] && return 0
                 else
                     MENU_PESAN="${MERAH}$(t "Nomor itu tidak ada di daftar." "That number is not in the list.")${RESET}"
                 fi
@@ -426,6 +455,7 @@ menu_rom() {
                     else
                         pilih_cara_flash "${MENU_JALUR[pilihan - 1]}"
                     fi
+                    [ -n "$SKYTOOL_SELESAI" ] && return 0
                 else
                     MENU_PESAN="${MERAH}$(t "Nomor itu tidak ada di daftar." "That number is not in the list.")${RESET}"
                 fi
