@@ -14,9 +14,9 @@ TEBAL="${ESC}[1m"
 PUTIH="${ESC}[38;2;255;255;255m"
 ORANYE="${ESC}[38;2;255;105;0m"
 ORANYE_TERANG="${ESC}[38;2;255;178;122m"
-ABU_TEKS="${ESC}[38;2;108;112;128m"
-ABU="${ESC}[38;2;95;100;114m"
-ABU_GELAP="${ESC}[38;2;46;50;64m"
+ABU_TEKS="${ESC}[38;2;170;176;190m"
+ABU="${ESC}[38;2;170;176;190m"
+ABU_GELAP="${ESC}[38;2;122;128;144m"
 ABU_TRACK="${ESC}[38;2;27;30;38m"
 MERAH="${ESC}[38;2;226;75;74m"
 
@@ -72,7 +72,7 @@ susun_layar() {
     cetak ""
     for ((j = 0; j < TOTAL; j++)); do
         case "${STATUS[$j]}" in
-            ok)   cetak "  ${ABU}[ OK ] ${LABEL[$j]}${RESET}" ;;
+            ok)   cetak "  ${ORANYE}[ OK ] ${LABEL[$j]}${RESET}" ;;
             run)  cetak "  ${ORANYE_TERANG}[ .. ] ${LABEL[$j]}${RESET}" ;;
             fail) cetak "  ${MERAH}[ XX ] ${LABEL[$j]}${RESET}" ;;
             *)    cetak "  ${ABU_GELAP}[    ] ${LABEL[$j]}${RESET}" ;;
