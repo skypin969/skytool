@@ -221,6 +221,7 @@ ekstrak_rom_inti() {
     printf '%s7' "$ESC"
     printf '%s[J' "$ESC"
     cetak "${PUTIH}$(t "MENGEKSTRAK: " "EXTRACTING: ")${ORANYE}$(basename "$tgz")${RESET}"
+    cetak ""
     cetak "${PUTIH}$(t "Memeriksa isi arsip, mohon tunggu..." "Checking archive, please wait...")${RESET}"
 
     # Daftar isi arsip dibaca satu kali. Sekaligus dicek: nama yang keluar dari folder tujuan
