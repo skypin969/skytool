@@ -33,6 +33,11 @@ baris_menu() {
     printf '%s' "${PUTIH}[  ${ORANYE}$1${PUTIH}  ] [  ${ORANYE}$(printf '%-27s' "$2")${PUTIH}  ]${RESET}"
 }
 
+# Satu baris ROM: nomor di kurung, lalu nama ROM di kurung tanpa spasi (contoh: [nama.rom])
+baris_rom() {
+    printf '%s' "${PUTIH}[  ${ORANYE}$1${PUTIH}  ] ${PUTIH}[${ORANYE}$2${PUTIH}]${RESET}"
+}
+
 # Sama seperti MiTool (rom.py): folder ROM dikenali dari ISINYA, bukan dari namanya.
 # Folder dianggap ROM fastboot kalau ada folder "images" dan salah satu skrip flash_all*.sh.
 cek_folder_rom() {
@@ -76,14 +81,14 @@ gambar_menu_rom() {
     cetak ""
     cetak "${TEBAL}${PUTIH}ＳＫＹ${ORANYE}ＴＯＯＬ${RESET} ${ABU_TEKS}${VERSI}${RESET}"
     cetak ""
-    cetak "${TEBAL}${ORANYE}FLASH ROM FASTBOOT TGZ${RESET}"
+    cetak "${TEBAL}${ORANYE}ＦＬＡＳＨ　ＲＯＭ　ＦＡＳＴＢＯＯＴ　ＴＧＺ${RESET}"
     cetak ""
 
-    cetak "${ABU_TEKS}ROM .tgz di penyimpanan HP:${RESET}"
+    cetak "${ABU_TEKS}[ROM FASTBOOT BELUM DI EKSTRAK]${RESET}"
     for ((i = 0; i < ${#MENU_NAMA[@]}; i++)); do
         if [ "${MENU_JENIS[i]}" = "tgz" ]; then
             ada_tgz=1
-            cetak "$(baris_menu $((i + 1)) "${MENU_NAMA[i]}")"
+            cetak "$(baris_rom $((i + 1)) "${MENU_NAMA[i]}")"
         fi
     done
     if [ "$ada_tgz" -eq 0 ]; then
@@ -91,11 +96,11 @@ gambar_menu_rom() {
     fi
     cetak ""
 
-    cetak "${ABU_TEKS}ROM yang sudah diekstrak:${RESET}"
+    cetak "${ABU_TEKS}[ROM FASTBOOT SUDAH DI EKSTRAK]${RESET}"
     for ((i = 0; i < ${#MENU_NAMA[@]}; i++)); do
         if [ "${MENU_JENIS[i]}" = "ekstrak" ]; then
             ada_ekstrak=1
-            cetak "$(baris_menu $((i + 1)) "${MENU_NAMA[i]}")"
+            cetak "$(baris_rom $((i + 1)) "${MENU_NAMA[i]}")"
         fi
     done
     if [ "$ada_ekstrak" -eq 0 ]; then
