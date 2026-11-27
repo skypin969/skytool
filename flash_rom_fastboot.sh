@@ -274,7 +274,7 @@ ekstrak_rom_inti() {
         return 1
     fi
     EKSTRAK_HASIL="$dest"
-    MENU_PESAN="${PUTIH}[  ${ORANYE}OK${PUTIH}  ] [  ${ORANYE}$(t "ekstrak selesai" "extraction done")${PUTIH}  ] : ${ORANYE}$(basename "$dest")${RESET}"
+    MENU_PESAN="${PUTIH}[  ${ORANYE}OK${PUTIH}  ] [ ${ORANYE}$(t "ekstrak selesai" "extraction done")${PUTIH} ] : ${ORANYE}$(basename "$dest")${RESET}"
     return 0
 }
 
@@ -392,7 +392,7 @@ pilih_cara_flash() {
                 flash_all)
                     nama+=("Flash all"); ket+=("$(t "Bootloader tetap terbuka, data terhapus." "Bootloader stays unlocked, data is wiped.")") ;;
                 flash_all_lock)
-                    nama+=("$(t "Flash semua + kunci bootloader" "Flash all + lock bootloader")"); ket+=("$(t "Bootloader dikunci setelah flash, data terhapus." "Bootloader is locked after flashing, data is wiped.")") ;;
+                    nama+=("$(t "Flash semua + kunci bootloader" "Flash all + lock bootloader")"); ket+=("$(t "Bootloader dikunci lagi, data terhapus." "Bootloader locked again, data wiped.")") ;;
                 flash_all_except_data_storage)
                     nama+=("$(t "Flash tanpa hapus data" "Flash without wiping data")"); ket+=("$(t "Data tidak terhapus setelah flash." "Data is not wiped after flashing.")") ;;
                 flash_all_except_storage)
@@ -406,7 +406,9 @@ pilih_cara_flash() {
         cetak "${ABU_TEKS}$(t "Pilih cara flash:" "Choose flash method:")${RESET}"
         for ((i = 0; i < ${#skrip[@]}; i++)); do
             cetak "$(baris_rom $((i + 1)) "${nama[i]}")"
-            cetak "      ${ABU_GELAP}${ket[i]}${RESET}"
+            printf '%s\n' "${ket[i]}" | while IFS= read -r baris; do
+                cetak "      ${ABU_GELAP}${baris}${RESET}"
+            done
         done
         if [ "${#skrip[@]}" -eq 0 ]; then
             cetak "${MERAH}  $(t "(tidak ada skrip flash di folder ini)" "(no flash script in this folder)")${RESET}"
