@@ -387,13 +387,40 @@ proses_flash() {
 
 # Membaca tahap dari script: keluarannya "jenis<TAB>nama", satu baris per tahap
 _fl_parse() {
-    grep -E '^[[:space:]]*fastboot \$\* (flash|erase|set_active|oem|reboot)([[:space:]]|$)' "$1" \
-        | grep -v '2>&1' \
-        | awk '{
-            if ($3 == "flash" || $3 == "erase") print $3 "\t" $4
-            else { nm = $3; if ($4 != "") nm = nm " " $4; print "finish\t" nm }
-        }' \
-        | awk -F'\t' '!seen[$0]++'
+    # Tidak terikat pada satu script. Dibaca dua kali:
+    # 1) nama variabel yang berisi fastboot, misalnya FB=fastboot atau FB=$(command -v fastboot)
+    # 2) baris yang memanggil fastboot, lewat nama fastboot atau variabel tadi, apa pun argumennya
+    # Baris komentar, baris dengan echo, dan baris yang dipipa satu kali (cek getvar | grep) dilewati.
+    awk '
+    function bersih(x) { gsub(/["\047{}]/, "", x); sub(/^\$/, "", x); return x }
+    FNR == NR {
+        if ($0 ~ /^[ \t]*(export[ \t]+)?[A-Za-z_][A-Za-z0-9_]*=.*fastboot/) {
+            x = $0; sub(/^[ \t]*(export[ \t]+)?/, "", x); sub(/=.*/, "", x); pakai[x] = 1
+        }
+        next
+    }
+    {
+        s = $0
+        sub(/^[ \t]+/, "", s)
+        if (s ~ /^#/ || s ~ /echo/ || s ~ /[^|]\|[^|]/ || s ~ /2>&1/) next
+        n = split(s, t, /[ \t;&()]+/)
+        mulai = 0
+        for (i = 1; i <= n; i++) {
+            v = bersih(t[i])
+            if (v == "fastboot" || (v in pakai)) { mulai = i; break }
+        }
+        if (mulai == 0) next
+        out = ""
+        for (i = mulai + 1; i <= n; i++) {
+            v = bersih(t[i])
+            if (v == "flash" && i + 1 <= n) { out = "flash\t" bersih(t[i + 1]); break }
+            if ((v == "erase" || v == "format") && i + 1 <= n) { out = "erase\t" bersih(t[i + 1]); break }
+            if (v == "set_active" && i + 1 <= n) { out = "finish\tset_active " bersih(t[i + 1]); break }
+            if (v == "oem" && i + 1 <= n) { out = "finish\toem " bersih(t[i + 1]); break }
+            if (v == "reboot") { out = "finish\treboot"; break }
+        }
+        if (out != "" && !(out in dilihat)) { dilihat[out] = 1; print out }
+    }' "$1" "$1"
 }
 
 # Mencari nomor tahap: $1 = jenis, $2 = nama (untuk finish cukup awalan namanya)
