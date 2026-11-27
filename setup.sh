@@ -6,33 +6,19 @@
 set -e
 
 VERSI="v9.6.9"
-# Lebar tampilan mengikuti lebar layar Termux (dibatasi supaya tetap rapi)
-LEBAR=$(( $(tput cols 2>/dev/null || echo 40) - 3 ))
-[ "$LEBAR" -lt 30 ] && LEBAR=30
-[ "$LEBAR" -gt 56 ] && LEBAR=56
 TOTAL=7
 ESC=$'\033'
 RESET="${ESC}[0m"
-PUTIH="${ESC}[1;97m"
+TEBAL="${ESC}[1m"
 ORANYE="${ESC}[38;5;208m"
-ORANYE_TERANG="${ESC}[38;5;215m"
-BG_ORANYE="${ESC}[48;5;208m"
-BG_ORANYE2="${ESC}[48;5;202m"
-GARIS_GELAP="${ESC}[38;5;130m"
 ABU="${ESC}[38;5;245m"
-ABU_GELAP="${ESC}[38;5;238m"
-ABU_TRACK="${ESC}[38;5;236m"
+ABU_GELAP="${ESC}[38;5;240m"
 MERAH="${ESC}[38;5;203m"
-HIJAU_PROMPT="${ESC}[38;5;79m"
-BIRU_PROMPT="${ESC}[38;5;111m"
+HIJAU="${ESC}[38;5;78m"
 
-# Nama langkah (pendek supaya muat satu baris di layar HP)
-LABEL=("izin penyimpanan" "arsitektur HP" "termux-api terdeteksi" "apt update" "apt upgrade" "pkg install python git libusb" "termux-adb (fastboot USB)")
-# Status tiap langkah: pending, run, ok, fail
+LABEL=("izin penyimpanan" "arsitektur HP" "Termux:API" "apt update" "apt upgrade" "pasang python, git, libusb" "adb & fastboot (termux-adb)")
 STATUS=(pending pending pending pending pending pending pending)
-SPIN="⠋"
 PESAN=""
-BLINK=1
 
 cetak() {
     printf '%s\033[K\n' "$1"
@@ -43,70 +29,55 @@ jeda() {
     read -r -t "$1" _ <> <(:) 2>/dev/null || true
 }
 
-# Satu baris judul dengan latar oranye. Bagian kosong diisi garis miring "╱" berwarna oranye gelap.
-baris_stripe() {
-    local teks="$1" baris="$2" i
-    local panjang=$(( LEBAR - 2 ))
-    printf '%s%s%s' "$BG_ORANYE" "$PUTIH" "$teks"
-    for ((i = ${#teks}; i < panjang; i++)); do
-        if (( (i + baris * 2) % 4 < 2 )); then
-            printf '%s%s╱' "$BG_ORANYE" "$GARIS_GELAP"
-        else
-            printf '%s ' "$BG_ORANYE"
+# Mengulang perintah sampai 3 kali kalau gagal (mirror Termux kadang sedang sinkronisasi)
+ulangi() {
+    local n
+    for n in 1 2 3; do
+        if "$@"; then
+            return 0
         fi
+        jeda 8
     done
-    printf '%s' "$RESET"
+    return 1
 }
 
-# Menggambar seluruh layar dari awal setiap kali (supaya tidak ada baris tertinggal)
+# Menyusun isi layar di memori (tanpa mencetak)
 susun_layar() {
-    local selesai=0 persen isi j bar kursor
+    local selesai=0 persen isi j bar
     for ((j = 0; j < TOTAL; j++)); do
         if [ "${STATUS[$j]}" = "ok" ]; then
             selesai=$((selesai + 1))
         fi
     done
     persen=$(( selesai * 100 / TOTAL ))
-
-    cetak ""
-    cetak "${PUTIH}SKY${ORANYE}TOOL${RESET}$(printf '%*s' 22 '')${ABU}${VERSI}${RESET}"
-    cetak ""
-    cetak "$(baris_stripe "MENYIAPKAN TERMUX" 0)${BG_ORANYE}${PUTIH}${SPIN} ${RESET}"
-    cetak "$(baris_stripe "langkah ${selesai} dari ${TOTAL} - ${persen}%" 1)"
-
-    isi=$(( persen * LEBAR / 100 ))
+    isi=$(( persen / 5 ))
     bar=""
-    for ((j = 0; j < LEBAR; j++)); do
+    for ((j = 0; j < 20; j++)); do
         if [ "$j" -lt "$isi" ]; then
-            bar="${bar}${ORANYE}█"
+            bar="${bar}#"
         else
-            bar="${bar}${ABU_TRACK}█"
+            bar="${bar}-"
         fi
     done
-    cetak ""
-    cetak "${bar}${RESET}"
-    cetak ""
 
+    cetak ""
+    cetak "${TEBAL}SKYTOOL${RESET} ${ABU}${VERSI}${RESET}"
+    cetak "Menyiapkan Termux"
+    cetak ""
+    cetak "[${bar}] ${persen}%  (${selesai}/${TOTAL})"
+    cetak ""
     for ((j = 0; j < TOTAL; j++)); do
         case "${STATUS[$j]}" in
-            ok)   cetak "${ABU}[ OK ] ${LABEL[$j]}${RESET}" ;;
-            run)  cetak "${ORANYE_TERANG}[ .. ] ${LABEL[$j]}${RESET}" ;;
-            fail) cetak "${MERAH}[ XX ] ${LABEL[$j]}${RESET}" ;;
-            *)    cetak "${ABU_GELAP}[ -- ] ${LABEL[$j]}${RESET}" ;;
+            ok)   cetak "  ${HIJAU}[ OK ]${RESET} ${LABEL[$j]}" ;;
+            run)  cetak "  ${ORANYE}[ .. ]${RESET} ${LABEL[$j]}" ;;
+            fail) cetak "  ${MERAH}[ XX ]${RESET} ${LABEL[$j]}" ;;
+            *)    cetak "  ${ABU_GELAP}[    ]${RESET} ${LABEL[$j]}" ;;
         esac
     done
-
     if [ -n "$PESAN" ]; then
         cetak ""
         cetak "$PESAN"
     fi
-
-    garis=""
-    for ((j = 0; j < LEBAR; j++)); do
-        garis="${garis}─"
-    done
-    cetak ""
-    cetak "${ABU_GELAP}${garis}${RESET}"
     printf '\033[J'
 }
 
@@ -122,17 +93,14 @@ gambar_layar() {
 jalankan_langkah() {
     local idx="$1"
     shift
-    local log pid i=0
-    local frames=("◐" "◓" "◑" "◒")
+    local log pid
     STATUS[$idx]="run"
     log=$(mktemp)
     "$@" > "$log" 2>&1 &
     pid=$!
     while kill -0 "$pid" 2>/dev/null; do
-        SPIN="${frames[$((i % 4))]}"
-        i=$((i + 1))
         gambar_layar
-        jeda 0.2
+        jeda 0.5
     done
     if wait "$pid"; then
         STATUS[$idx]="ok"
@@ -146,18 +114,6 @@ jalankan_langkah() {
         rm -f "$log"
         exit 1
     fi
-}
-
-# Mengulang perintah sampai 3 kali kalau gagal (mirror Termux kadang sedang sinkronisasi)
-ulangi() {
-    local n
-    for n in 1 2 3; do
-        if "$@"; then
-            return 0
-        fi
-        jeda 8
-    done
-    return 1
 }
 
 cek_arsitektur() {
@@ -237,6 +193,7 @@ if [ ! -d "$HOME/storage" ]; then
     exit 1
 fi
 STATUS[0]="ok"
+gambar_layar
 
 # Langkah 2 sampai 7
 jalankan_langkah 1 cek_arsitektur
