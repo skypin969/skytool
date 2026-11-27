@@ -92,7 +92,7 @@ susun_layar() {
                 bar="${bar}${ORANYE}#"
             fi
         else
-            bar="${bar} "
+            bar="${bar}${ABU_GELAP}#"
         fi
     done
 
@@ -107,7 +107,7 @@ susun_layar() {
             ok)   cetak "${PUTIH}[  ${ORANYE}OK${PUTIH}  ] [  ${ORANYE}${LABEL[$j]}${PUTIH}  ]${RESET}" ;;
             run)  cetak "$(baris_kilat "${LABEL[$j]}")" ;;
             fail) cetak "${MERAH}[  ] [  ${LABEL[$j]}  ]${RESET}" ;;
-            *)    cetak "${ABU_GELAP}[  ] [  ${LABEL[$j]}  ]${RESET}" ;;
+            *)    cetak "${ABU_GELAP}[  OK  ] [  ${LABEL[$j]}  ]${RESET}" ;;
         esac
     done
     if [ -n "$PESAN" ]; then
@@ -179,7 +179,7 @@ pasang_termux_adb() {
         curl -fsSL -o "$PREFIX/etc/apt/trusted.gpg.d/nohajc.gpg" https://nohajc.github.io/nohajc.gpg || return 1
         yes | apt update
     fi
-    yes | apt install termux-adb || return 1
+    apt_senyap install termux-adb || return 1
     ln -sf "$PREFIX/bin/termux-fastboot" "$PREFIX/bin/fastboot"
     ln -sf "$PREFIX/bin/termux-adb" "$PREFIX/bin/adb"
 }
@@ -198,13 +198,27 @@ pulihkan_prompt() {
     fi
 }
 
+# Menjalankan apt tanpa pertanyaan dan tanpa tulisan langsung ke layar.
+# dpkg kadang menulis ke terminal (/dev/tty) dan itu merusak tampilan yang digambar ulang.
+apt_senyap() {
+    DEBIAN_FRONTEND=noninteractive apt -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold "$@" < /dev/null
+}
+
+langkah_upgrade() {
+    apt_senyap upgrade && apt_senyap install --reinstall coreutils
+}
+
+langkah_paket() {
+    apt_senyap install python git termux-api libusb
+}
+
 # Semua langkah instalasi. Berhenti di langkah pertama yang gagal.
 jalankan_semua() {
     jalankan_langkah 1 cek_arsitektur || return 1
     jalankan_langkah 2 cek_termux_api || return 1
     jalankan_langkah 3 ulangi bash -c "yes | apt update" || return 1
-    jalankan_langkah 4 ulangi bash -c "yes | apt upgrade && apt install -y --reinstall coreutils" || return 1
-    jalankan_langkah 5 ulangi bash -c "yes | pkg install python git termux-api libusb" || return 1
+    jalankan_langkah 4 ulangi langkah_upgrade || return 1
+    jalankan_langkah 5 ulangi langkah_paket || return 1
     jalankan_langkah 6 pasang_termux_adb || return 1
 }
 
