@@ -94,6 +94,12 @@ gambar_layar() {
         cetak "$PESAN"
     fi
 
+    garis=""
+    for ((j = 0; j < LEBAR; j++)); do
+        garis="${garis}─"
+    done
+    cetak ""
+    cetak "${ABU_GELAP}${garis}${RESET}"
     printf '\033[J'
 }
 
