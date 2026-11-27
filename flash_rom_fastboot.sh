@@ -170,28 +170,45 @@ gambar_progres() {
 # Mengekstrak satu file .tgz ke folder <nama>_extracted di lokasi yang sama, seperti MiTool.
 # Argumen: lokasi file .tgz.
 ekstrak_rom() {
-    local tgz="$1" dir stem dest total rc_file pid mulai sekarang selesai_b rc f salah=0
+    local tgz="$1" dir stem dest total salah list rc_file pid mulai sekarang selesai_b rc
     dir=$(dirname "$tgz")
     stem=$(basename "$tgz" .tgz)
     dest="$dir/${stem}_extracted"
 
-    if ! tar -tzf "$tgz" > /dev/null 2>&1; then
+    # Langsung tampilkan status, supaya layar tidak terlihat macet saat arsip diperiksa
+    printf '%s7' "$ESC"
+    printf '%s8%s[J' "$ESC" "$ESC"
+    cetak "${PUTIH}MENGEKSTRAK: ${ORANYE}$(basename "$tgz")${RESET}"
+    cetak "${PUTIH}Memeriksa isi arsip, mohon tunggu...${RESET}"
+
+    # Daftar isi arsip dibaca satu kali. Sekaligus dicek: nama yang keluar dari folder tujuan
+    # (berisi .. atau diawali /) tidak boleh dipakai, sama seperti MiTool.
+    list=$(mktemp)
+    if ! tar -tzvf "$tgz" > "$list" 2>/dev/null; then
+        rm -f "$list"
         MENU_PESAN="${MERAH}File ini tidak bisa dibuka sebagai arsip .tgz.${RESET}"
         return 1
     fi
-    # Nama file yang keluar dari folder tujuan (berisi .. atau diawali /) tidak boleh dipakai
-    while IFS= read -r f; do
-        if [[ "$f" == /* || "$f" == *..* ]]; then
-            salah=1
-            break
-        fi
-    done < <(tar -tzf "$tgz" 2>/dev/null)
+    read -r total salah < <(awk '
+        {
+            s += $3
+            n = $0
+            for (i = 0; i < 5; i++) sub(/^[ \t]*[^ \t]+/, "", n)
+            sub(/^[ \t]+/, "", n)
+            if (n ~ /(^|\/)\.\.(\/|$)/ || n ~ /^\//) bad = 1
+            if (n ~ / -> /) {
+                t = n
+                sub(/.* -> /, "", t)
+                if (t ~ /^\// || t ~ /(^|\/)\.\.(\/|$)/) bad = 1
+            }
+        }
+        END { print s + 0, bad + 0 }' "$list")
+    rm -f "$list"
     if [ "$salah" -eq 1 ]; then
         MENU_PESAN="${MERAH}Arsip ini punya nama file yang tidak aman, ekstrak dibatalkan.${RESET}"
         return 1
     fi
 
-    total=$(tar -tzvf "$tgz" 2>/dev/null | awk '{s+=$3} END{print s+0}')
     rm -rf "$dest"
     mkdir -p "$dest"
     rc_file=$(mktemp)
@@ -201,8 +218,6 @@ ekstrak_rom() {
     pid=$!
     disown "$pid" 2>/dev/null
     mulai=$(date +%s)
-    # Simpan posisi kursor (tepat di bawah input nomor), progres akan digambar ulang dari sini
-    printf '%s7' "$ESC"
     while [ ! -s "$rc_file" ]; do
         sekarang=$(date +%s)
         selesai_b=$(du -sb "$dest" 2>/dev/null | cut -f1)
