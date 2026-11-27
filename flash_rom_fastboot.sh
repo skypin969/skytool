@@ -31,6 +31,28 @@ EKSTRAK_HASIL=""
 
 # Jumlah baris yang sudah ditulis di layar, dipakai untuk menentukan posisi progres ekstrak
 BARIS=0
+# Bahasa tampilan mengikuti bahasa perangkat: Indonesia jika bahasanya Indonesia, selain itu Inggris.
+# Untuk tes, bisa dipaksa dengan SKYTOOL_BAHASA=id atau SKYTOOL_BAHASA=en.
+deteksi_bahasa() {
+    local kode="${SKYTOOL_BAHASA:-}"
+    if [ -z "$kode" ]; then
+        kode=$(getprop persist.sys.locale 2>/dev/null || true)
+        [ -z "$kode" ] && kode=$(getprop ro.product.locale 2>/dev/null || true)
+        [ -z "$kode" ] && kode="${LANG:-en}"
+    fi
+    kode=$(printf '%s' "${kode%%[-_.@]*}" | tr 'A-Z' 'a-z')
+    case "$kode" in
+        id|in) printf 'id' ;;
+        *) printf 'en' ;;
+    esac
+}
+BAHASA=$(deteksi_bahasa)
+
+# t "teks Indonesia" "teks Inggris": pilih sesuai BAHASA
+t() {
+    if [ "$BAHASA" = id ]; then printf '%s' "$1"; else printf '%s' "$2"; fi
+}
+
 cetak() {
     printf '%s\033[K\n' "$1"
     BARIS=$((BARIS + 1))
@@ -107,7 +129,7 @@ gambar_menu_rom() {
     cetak "${TEBAL}${ORANYE}ＦＬＡＳＨ ＲＯＭ ＦＡＳＴＢＯＯＴ ＴＧＺ${RESET}"
     cetak ""
 
-    cetak "${KUNING_REDUP}[ROM FASTBOOT BELUM DI EKSTRAK]${RESET}"
+    cetak "${KUNING_REDUP}$(t "[ROM FASTBOOT BELUM DI EKSTRAK]" "[FASTBOOT ROM NOT EXTRACTED]")${RESET}"
     for ((i = 0; i < ${#MENU_NAMA[@]}; i++)); do
         if [ "${MENU_JENIS[i]}" = "tgz" ]; then
             ada_tgz=1
@@ -115,11 +137,11 @@ gambar_menu_rom() {
         fi
     done
     if [ "$ada_tgz" -eq 0 ]; then
-        cetak "${ABU_GELAP}  (tidak ada file .tgz)${RESET}"
+        cetak "${ABU_GELAP}  $(t "(tidak ada file .tgz)" "(no .tgz file)")${RESET}"
     fi
     cetak ""
 
-    cetak "${HIJAU_REDUP}[ROM FASTBOOT SUDAH DI EKSTRAK]${RESET}"
+    cetak "${HIJAU_REDUP}$(t "[ROM FASTBOOT SUDAH DI EKSTRAK]" "[FASTBOOT ROM EXTRACTED]")${RESET}"
     for ((i = 0; i < ${#MENU_NAMA[@]}; i++)); do
         if [ "${MENU_JENIS[i]}" = "ekstrak" ]; then
             ada_ekstrak=1
@@ -127,11 +149,11 @@ gambar_menu_rom() {
         fi
     done
     if [ "$ada_ekstrak" -eq 0 ]; then
-        cetak "${ABU_GELAP}  (belum ada)${RESET}"
+        cetak "${ABU_GELAP}  $(t "(belum ada)" "(none yet)")${RESET}"
     fi
     cetak ""
 
-    cetak "${ABU_GELAP}[  0  ] [  kembali  ]${RESET}"
+    cetak "${ABU_GELAP}[  0  ] [  $(t "kembali" "back")  ]${RESET}"
     cetak ""
     if [ -n "$MENU_PESAN" ]; then
         cetak "$MENU_PESAN"
@@ -164,9 +186,9 @@ gambar_progres() {
     fi
     # Kembali ke posisi kursor yang disimpan di awal ekstrak, lalu hapus isi di bawahnya
     printf '%s8%s[J' "$ESC" "$ESC"
-    cetak "${PUTIH}MENGEKSTRAK: ${ORANYE}${nama}${RESET}"
+    cetak "${PUTIH}$(t "MENGEKSTRAK: " "EXTRACTING: ")${ORANYE}${nama}${RESET}"
     cetak "${PUTIH}[${bar}${PUTIH}]  [  ${ORANYE}${persen}%${PUTIH}  ]  [  ${ORANYE}$(awk -v a="$selesai_b" -v b="$total_b" 'BEGIN{printf "%.1f GB / %.1f GB", a/1073741824, b/1073741824}')${PUTIH}  ]${RESET}"
-    cetak "${PUTIH}[  ${ORANYE}$(awk -v k="$kecepatan" 'BEGIN{printf "%.1f MB/s", k/1048576}')${PUTIH}  ]  [  ${ORANYE}sisa ± ${sisa} detik${PUTIH}  ]${RESET}"
+    cetak "${PUTIH}[  ${ORANYE}$(awk -v k="$kecepatan" 'BEGIN{printf "%.1f MB/s", k/1048576}')${PUTIH}  ]  [  ${ORANYE}$(t "sisa ± ${sisa} detik" "left ± ${sisa} sec")${PUTIH}  ]${RESET}"
 }
 
 # Mengekstrak satu file .tgz ke folder <nama>_extracted di lokasi yang sama, seperti MiTool.
@@ -180,15 +202,15 @@ ekstrak_rom() {
     # Langsung tampilkan status, supaya layar tidak terlihat macet saat arsip diperiksa
     printf '%s7' "$ESC"
     printf '%s8%s[J' "$ESC" "$ESC"
-    cetak "${PUTIH}MENGEKSTRAK: ${ORANYE}$(basename "$tgz")${RESET}"
-    cetak "${PUTIH}Memeriksa isi arsip, mohon tunggu...${RESET}"
+    cetak "${PUTIH}$(t "MENGEKSTRAK: " "EXTRACTING: ")${ORANYE}$(basename "$tgz")${RESET}"
+    cetak "${PUTIH}$(t "Memeriksa isi arsip, mohon tunggu..." "Checking archive, please wait...")${RESET}"
 
     # Daftar isi arsip dibaca satu kali. Sekaligus dicek: nama yang keluar dari folder tujuan
     # (berisi .. atau diawali /) tidak boleh dipakai, sama seperti MiTool.
     list=$(mktemp)
     if ! tar -tzvf "$tgz" > "$list" 2>/dev/null; then
         rm -f "$list"
-        MENU_PESAN="${MERAH}File ini tidak bisa dibuka sebagai arsip .tgz.${RESET}"
+        MENU_PESAN="${MERAH}$(t "File ini tidak bisa dibuka sebagai arsip .tgz." "This file cannot be opened as a .tgz archive.")${RESET}"
         return 1
     fi
     read -r total salah < <(awk '
@@ -207,7 +229,7 @@ ekstrak_rom() {
         END { print s + 0, bad + 0 }' "$list")
     rm -f "$list"
     if [ "$salah" -eq 1 ]; then
-        MENU_PESAN="${MERAH}Arsip ini punya nama file yang tidak aman, ekstrak dibatalkan.${RESET}"
+        MENU_PESAN="${MERAH}$(t "Arsip ini punya nama file yang tidak aman, ekstrak dibatalkan." "This archive has unsafe file names, extraction cancelled.")${RESET}"
         return 1
     fi
 
@@ -230,11 +252,11 @@ ekstrak_rom() {
     rm -f "$rc_file"
     if [ "$rc" -ne 0 ] || ! cek_folder_rom "$dest"; then
         rm -rf "$dest"
-        MENU_PESAN="${MERAH}Ekstrak gagal. Arsip ini bukan ROM fastboot yang valid.${RESET}"
+        MENU_PESAN="${MERAH}$(t "Ekstrak gagal. Arsip ini bukan ROM fastboot yang valid." "Extraction failed. This archive is not a valid fastboot ROM.")${RESET}"
         return 1
     fi
     EKSTRAK_HASIL="$dest"
-    MENU_PESAN="${PUTIH}[  ${ORANYE}OK${PUTIH}  ] [  ${ORANYE}ekstrak selesai: $(basename "$dest")${PUTIH}  ]${RESET}"
+    MENU_PESAN="${PUTIH}[  ${ORANYE}OK${PUTIH}  ] [  ${ORANYE}$(t "ekstrak selesai: " "extraction done: ")$(basename "$dest")${PUTIH}  ]${RESET}"
     return 0
 }
 
@@ -261,10 +283,10 @@ judul_proses() {
     cetak ""
     cetak "${ABU_TEKS}${VERSI}${RESET}"
     cetak ""
-    cetak "${TEBAL}${ORANYE}ＰＲＯＳＥＳ ＦＬＡＳＨ ＲＯＭ${RESET}"
+    cetak "${TEBAL}${ORANYE}$(t "ＰＲＯＳＥＳ ＦＬＡＳＨ ＲＯＭ" "ＦＬＡＳＨ ＲＯＭ ＰＲＯＧＲＥＳＳ")${RESET}"
     cetak ""
-    cetak "${ABU_TEKS}ROM: ${PUTIH}$(basename "$folder")${RESET}"
-    cetak "${ABU_TEKS}Pilihan: ${PUTIH}${nama}${RESET}"
+    cetak "${ABU_TEKS}$(t "ROM: " "ROM: ")${PUTIH}$(basename "$folder")${RESET}"
+    cetak "${ABU_TEKS}$(t "Pilihan: " "Option: ")${PUTIH}${nama}${RESET}"
     cetak ""
 }
 
@@ -276,7 +298,7 @@ proses_flash() {
     local i=0
     fb=$(type -P fastboot) || fb=""
     if [ -z "$fb" ]; then
-        MENU_PESAN="${MERAH}fastboot tidak ditemukan. Pasang dulu lewat setup.${RESET}"
+        MENU_PESAN="${MERAH}$(t "fastboot tidak ditemukan. Pasang dulu lewat setup." "fastboot not found. Install it through setup first.")${RESET}"
         return 1
     fi
     judul_proses "$folder" "$nama"
@@ -288,7 +310,7 @@ proses_flash() {
         keluar_biasa=$(timeout 5 "$fb" devices 2>/dev/null)
         keluar_semua=$(timeout 5 "$fb" devices 2>&1)
         if [[ "${keluar_semua,,}" == *"no permissions"* ]]; then
-            cetak "${ORANYE}${bingkai[i]} ${ABU_TEKS}no permission, cek izin USB${RESET}"
+            cetak "${ORANYE}${bingkai[i]} ${ABU_TEKS}no permission, check USB access${RESET}"
         elif [ -n "$(printf '%s' "$keluar_biasa" | tr -d '[:space:]')" ]; then
             break
         else
@@ -324,36 +346,36 @@ pilih_cara_flash() {
             skrip+=("$stem.sh")
             case "$stem" in
                 flash_all)
-                    nama+=("Flash all"); ket+=("Bootloader tetap terbuka.") ;;
+                    nama+=("Flash all"); ket+=("$(t "Bootloader tetap terbuka." "Bootloader stays unlocked.")") ;;
                 flash_all_lock)
-                    nama+=("Flash semua + kunci bootloader"); ket+=("Bootloader dikunci lagi setelah flash.") ;;
+                    nama+=("$(t "Flash semua + kunci bootloader" "Flash all + lock bootloader")"); ket+=("$(t "Bootloader dikunci lagi setelah flash." "Bootloader is locked again after flashing.")") ;;
                 flash_all_except_data_storage)
-                    nama+=("Flash tanpa hapus data"); ket+=("Foto dan aplikasi tetap ada.") ;;
+                    nama+=("$(t "Flash tanpa hapus data" "Flash without wiping data")"); ket+=("$(t "Foto dan aplikasi tetap ada." "Photos and apps are kept.")") ;;
                 flash_all_except_storage)
-                    nama+=("Flash tanpa penyimpanan"); ket+=("Bagian penyimpanan tidak ditulis.") ;;
+                    nama+=("$(t "Flash tanpa penyimpanan" "Flash without storage")"); ket+=("$(t "Bagian penyimpanan tidak ditulis." "Storage section is not written.")") ;;
             esac
         done
 
         judul_layar
-        cetak "${ABU_TEKS}ROM dipilih: ${ORANYE}$(basename "$folder")${RESET}"
+        cetak "${ABU_TEKS}$(t "ROM dipilih: " "ROM selected: ")${ORANYE}$(basename "$folder")${RESET}"
         cetak ""
-        cetak "${ABU_TEKS}Pilih cara flash:${RESET}"
+        cetak "${ABU_TEKS}$(t "Pilih cara flash:" "Choose flash method:")${RESET}"
         for ((i = 0; i < ${#skrip[@]}; i++)); do
             cetak "$(baris_rom $((i + 1)) "${nama[i]}")"
             cetak "      ${ABU_GELAP}${ket[i]}${RESET}"
         done
         if [ "${#skrip[@]}" -eq 0 ]; then
-            cetak "${MERAH}  (tidak ada skrip flash di folder ini)${RESET}"
+            cetak "${MERAH}  $(t "(tidak ada skrip flash di folder ini)" "(no flash script in this folder)")${RESET}"
         fi
         cetak ""
-        cetak "${ABU_GELAP}[  0  ] [  kembali  ]${RESET}"
+        cetak "${ABU_GELAP}[  0  ] [  $(t "kembali" "back")  ]${RESET}"
         cetak ""
         if [ -n "$MENU_PESAN" ]; then
             cetak "$MENU_PESAN"
             cetak ""
         fi
         printf '\033[J'
-        printf '%s' "${PUTIH}Pilih nomor, lalu Enter: ${RESET}"
+        printf '%s' "${PUTIH}$(t "Pilih nomor, lalu Enter: " "Choose a number, then Enter: ")${RESET}"
         read -r pilihan || return 0
         MENU_PESAN=""
         case "$pilihan" in
@@ -363,13 +385,13 @@ pilih_cara_flash() {
                 return 0
                 ;;
             *[!0-9]*)
-                MENU_PESAN="${MERAH}Ketik angka saja.${RESET}"
+                MENU_PESAN="${MERAH}$(t "Ketik angka saja." "Type a number only.")${RESET}"
                 ;;
             *)
                 if [ "$pilihan" -ge 1 ] && [ "$pilihan" -le "${#skrip[@]}" ]; then
                     proses_flash "$folder" "${skrip[pilihan - 1]}" "${nama[pilihan - 1]}"
                 else
-                    MENU_PESAN="${MERAH}Nomor itu tidak ada di daftar.${RESET}"
+                    MENU_PESAN="${MERAH}$(t "Nomor itu tidak ada di daftar." "That number is not in the list.")${RESET}"
                 fi
                 ;;
         esac
@@ -382,7 +404,7 @@ menu_rom() {
     while true; do
         muat_daftar
         gambar_menu_rom
-        printf '%s' "${PUTIH}Pilih nomor, lalu Enter: ${RESET}"
+        printf '%s' "${PUTIH}$(t "Pilih nomor, lalu Enter: " "Choose a number, then Enter: ")${RESET}"
         read -r pilihan || return 0
         MENU_PESAN=""
         case "$pilihan" in
@@ -392,7 +414,7 @@ menu_rom() {
                 return 0
                 ;;
             *[!0-9]*)
-                MENU_PESAN="${MERAH}Ketik angka saja.${RESET}"
+                MENU_PESAN="${MERAH}$(t "Ketik angka saja." "Type a number only.")${RESET}"
                 ;;
             *)
                 if [ "$pilihan" -ge 1 ] && [ "$pilihan" -le "${#MENU_NAMA[@]}" ]; then
@@ -405,7 +427,7 @@ menu_rom() {
                         pilih_cara_flash "${MENU_JALUR[pilihan - 1]}"
                     fi
                 else
-                    MENU_PESAN="${MERAH}Nomor itu tidak ada di daftar.${RESET}"
+                    MENU_PESAN="${MERAH}$(t "Nomor itu tidak ada di daftar." "That number is not in the list.")${RESET}"
                 fi
                 ;;
         esac

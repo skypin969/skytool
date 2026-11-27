@@ -20,6 +20,28 @@ KILAT=0
 # Isi layar terakhir yang sudah ditulis, dipakai untuk menulis ulang baris yang berubah saja
 LAYAR_LAMA=()
 
+# Bahasa tampilan mengikuti bahasa perangkat: Indonesia jika bahasanya Indonesia, selain itu Inggris.
+# Untuk tes, bisa dipaksa dengan SKYTOOL_BAHASA=id atau SKYTOOL_BAHASA=en.
+deteksi_bahasa() {
+    local kode="${SKYTOOL_BAHASA:-}"
+    if [ -z "$kode" ]; then
+        kode=$(getprop persist.sys.locale 2>/dev/null || true)
+        [ -z "$kode" ] && kode=$(getprop ro.product.locale 2>/dev/null || true)
+        [ -z "$kode" ] && kode="${LANG:-en}"
+    fi
+    kode=$(printf '%s' "${kode%%[-_.@]*}" | tr 'A-Z' 'a-z')
+    case "$kode" in
+        id|in) printf 'id' ;;
+        *) printf 'en' ;;
+    esac
+}
+BAHASA=$(deteksi_bahasa)
+
+# t "teks Indonesia" "teks Inggris": pilih sesuai BAHASA
+t() {
+    if [ "$BAHASA" = id ]; then printf '%s' "$1"; else printf '%s' "$2"; fi
+}
+
 cetak() {
     printf '%s\033[K\n' "$1"
 }
@@ -76,7 +98,7 @@ susun_layar() {
     cetak ""
     cetak "${ABU_TEKS}${VERSI}${RESET}"
     cetak ""
-    cetak "${TEBAL}${ORANYE}ＭＥＮＹＩＡＰＫＡＮ ＴＥＲＭＵＸ${RESET}"
+    cetak "${TEBAL}${ORANYE}$(t "ＭＥＮＹＩＡＰＫＡＮ ＴＥＲＭＵＸ" "ＳＥＴＵＰ ＴＥＲＭＵＸ")${RESET}"
     cetak ""
     cetak "${PUTIH}[${bar}${PUTIH}]  [  ${ORANYE}${persen}%${PUTIH}  ]  [  ${ORANYE}${selesai}/${TOTAL}${PUTIH}  ]${RESET}"
     cetak ""
@@ -158,14 +180,14 @@ cek_arsitektur() {
     local arch
     arch=$(dpkg --print-architecture)
     if [ "$arch" != "aarch64" ] && [ "$arch" != "arm" ]; then
-        echo "Arsitektur $arch tidak didukung."
+        echo "$(t "Arsitektur $arch tidak didukung." "Architecture $arch is not supported.")"
         return 1
     fi
 }
 
 cek_termux_api() {
     if ! cmd package list packages --user 0 com.termux.api < /dev/null 2>/dev/null | grep -q 'com.termux.api'; then
-        echo "Aplikasi Termux:API belum terpasang. Pasang dulu dari F-Droid, lalu jalankan lagi perintah awal di README."
+        echo "$(t "Aplikasi Termux:API belum terpasang. Pasang dulu dari F-Droid, lalu jalankan lagi perintah awal di README." "Termux:API app is not installed. Install it from F-Droid first, then run the start command in README again.")"
         return 1
     fi
 }
@@ -248,7 +270,7 @@ pasang_pembungkus_fastboot() {
 
 main() {
     local TOTAL=7 PESAN=""
-    local -a LABEL=("izin penyimpanan" "arsitektur HP" "Termux:API" "apt update" "apt upgrade" "pasang python, git, libusb" "adb & fastboot (termux-adb)")
+    local -a LABEL=("$(t "izin penyimpanan" "storage permission")" "$(t "arsitektur HP" "phone architecture")" "Termux:API" "apt update" "apt upgrade" "$(t "pasang python, git, libusb" "install python, git, libusb")" "adb & fastboot (termux-adb)")
     local -a STATUS=(pending pending pending pending pending pending pending)
 
     # Kursor disembunyikan selama proses berjalan, lalu dimunculkan lagi di akhir
@@ -263,7 +285,7 @@ main() {
     # Langkah 1: izin penyimpanan (perlu tombol di layar HP)
     STATUS[0]="run"
     if [ ! -d "$HOME/storage" ]; then
-        PESAN="Tekan Izinkan di layar HP."
+        PESAN="$(t "Tekan Izinkan di layar HP." "Tap Allow on the phone screen.")"
         gambar_layar
         termux-setup-storage || true
         local i
@@ -276,7 +298,7 @@ main() {
     if [ ! -d "$HOME/storage" ]; then
         STATUS[0]="fail"
         gambar_layar
-        echo "Izin penyimpanan belum diberikan. Jalankan lagi perintah awal di README."
+        echo "$(t "Izin penyimpanan belum diberikan. Jalankan lagi perintah awal di README." "Storage permission was not granted. Run the start command in README again.")"
         printf '\033[?25h'
         return 1
     fi
@@ -291,7 +313,7 @@ main() {
         # Setelah persiapan selesai, prompt di sesi ini berubah jadi [ ~$  ] dengan petunjuk abu-abu di sebelahnya.
         # Pengaturan ini tidak ditulis ke .bashrc, jadi saat Termux dibuka lagi prompt kembali ke bawaan.
         # Petunjuk ditulis di baris sendiri di atas prompt, bukan di dalam prompt
-        printf '%s\n' "${ABU_GELAP}Ketik : fastboot devices${RESET}"
+        printf '%s\n' "${ABU_GELAP}$(t "Ketik : fastboot devices" "Type: fastboot devices")${RESET}"
         PS1='\[\e[38;2;255;255;255m\][  \[\e[38;2;255;105;0m\]\w\$\[\e[38;2;255;255;255m\]  ]\[\e[0m\] '
         pasang_pembungkus_fastboot
     fi

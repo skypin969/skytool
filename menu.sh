@@ -21,6 +21,28 @@ SKYTOOL_BASE="${SKYTOOL_BASE:-https://raw.githubusercontent.com/skypin969/skytoo
 # Pesan singkat di bawah layar, misalnya kalau skrip belum ada
 MENU_PESAN=""
 
+# Bahasa tampilan mengikuti bahasa perangkat: Indonesia jika bahasanya Indonesia, selain itu Inggris.
+# Untuk tes, bisa dipaksa dengan SKYTOOL_BAHASA=id atau SKYTOOL_BAHASA=en.
+deteksi_bahasa() {
+    local kode="${SKYTOOL_BAHASA:-}"
+    if [ -z "$kode" ]; then
+        kode=$(getprop persist.sys.locale 2>/dev/null || true)
+        [ -z "$kode" ] && kode=$(getprop ro.product.locale 2>/dev/null || true)
+        [ -z "$kode" ] && kode="${LANG:-en}"
+    fi
+    kode=$(printf '%s' "${kode%%[-_.@]*}" | tr 'A-Z' 'a-z')
+    case "$kode" in
+        id|in) printf 'id' ;;
+        *) printf 'en' ;;
+    esac
+}
+BAHASA=$(deteksi_bahasa)
+
+# t "teks Indonesia" "teks Inggris": pilih sesuai BAHASA
+t() {
+    if [ "$BAHASA" = id ]; then printf '%s' "$1"; else printf '%s' "$2"; fi
+}
+
 cetak() {
     printf '%s\033[K\n' "$1"
 }
@@ -51,7 +73,7 @@ gambar_menu_utama() {
     cetak "$(baris_menu 2 "FLASH FILE IMG")"
     cetak "$(baris_menu 3 "ADB SIDELOAD")"
     cetak ""
-    cetak "${ABU_GELAP}[  0  ] [  KELUAR  ]${RESET}"
+    cetak "${ABU_GELAP}[  0  ] [  $(t "KELUAR" "EXIT")  ]${RESET}"
     cetak ""
     if [ -n "$MENU_PESAN" ]; then
         cetak "$MENU_PESAN"
@@ -65,7 +87,7 @@ gambar_menu_utama() {
 buka_skrip() {
     local kode
     if ! kode=$(curl -fsS "$SKYTOOL_BASE/$1" 2>/dev/null); then
-        MENU_PESAN="${ABU_TEKS}Menu ini belum dibuat, atau HP tidak terhubung internet.${RESET}"
+        MENU_PESAN="${ABU_TEKS}$(t "Menu ini belum dibuat, atau HP tidak terhubung internet." "This menu is not ready yet, or the phone is not connected to the internet.")${RESET}"
         return 1
     fi
     source <(printf '%s\n' "$kode")
@@ -76,7 +98,7 @@ menu_utama() {
     local pilihan
     while true; do
         gambar_menu_utama
-        printf '%s' "${PUTIH}Pilih nomor, lalu Enter: ${RESET}"
+        printf '%s' "${PUTIH}$(t "Pilih nomor, lalu Enter: " "Choose a number, then Enter: ")${RESET}"
         read -r pilihan || return 0
         MENU_PESAN=""
         case "$pilihan" in
@@ -96,7 +118,7 @@ menu_utama() {
                 buka_skrip adb_sideload.sh
                 ;;
             *)
-                MENU_PESAN="${MERAH}Nomor itu tidak ada di daftar.${RESET}"
+                MENU_PESAN="${MERAH}$(t "Nomor itu tidak ada di daftar." "That number is not in the list.")${RESET}"
                 ;;
         esac
     done
