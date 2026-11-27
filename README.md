@@ -10,7 +10,7 @@ A tool for Termux. This repo is still in its early stage.
 
 ---
 
-## Initial setup
+## First step
 
 1. Install the **Termux** and **Termux:API** apps on your phone from **F-Droid** or from the GitHub releases page: [termux-app](https://github.com/termux/termux-app/releases) and [termux-api](https://github.com/termux/termux-api/releases). Use the same source for both apps. Do not use the Play Store versions.
 2. Open Termux and run this one command:
