@@ -15,6 +15,7 @@ ORANYE="${ESC}[38;5;208m"
 ORANYE_TERANG="${ESC}[38;5;215m"
 BG_ORANYE="${ESC}[48;5;208m"
 BG_ORANYE2="${ESC}[48;5;202m"
+GARIS_GELAP="${ESC}[38;5;130m"
 ABU="${ESC}[38;5;245m"
 ABU_GELAP="${ESC}[38;5;238m"
 ABU_TRACK="${ESC}[38;5;236m"
@@ -34,19 +35,16 @@ cetak() {
     printf '%s\033[K\n' "$1"
 }
 
-# Satu baris judul dengan latar oranye bergaris (garis miring dibuat dari dua warna oranye bergantian)
+# Satu baris judul dengan latar oranye. Bagian kosong diisi garis miring "╱" berwarna oranye gelap.
 baris_stripe() {
-    local teks="$1" baris="$2" i ch
+    local teks="$1" baris="$2" i
     local panjang=$(( LEBAR - 2 ))
-    while [ ${#teks} -lt $panjang ]; do
-        teks="$teks "
-    done
-    for ((i = 0; i < ${#teks}; i++)); do
-        ch="${teks:i:1}"
-        if (( ((i + baris * 2) / 4) % 2 )); then
-            printf '%s%s%s' "$BG_ORANYE2" "$PUTIH" "$ch"
+    printf '%s%s%s' "$BG_ORANYE" "$PUTIH" "$teks"
+    for ((i = ${#teks}; i < panjang; i++)); do
+        if (( (i + baris * 2) % 4 < 2 )); then
+            printf '%s%s╱' "$BG_ORANYE" "$GARIS_GELAP"
         else
-            printf '%s%s%s' "$BG_ORANYE" "$PUTIH" "$ch"
+            printf '%s ' "$BG_ORANYE"
         fi
     done
     printf '%s' "$RESET"
@@ -73,9 +71,9 @@ gambar_layar() {
     bar=""
     for ((j = 0; j < LEBAR; j++)); do
         if [ "$j" -lt "$isi" ]; then
-            bar="${bar}${ORANYE}━"
+            bar="${bar}${ORANYE}█"
         else
-            bar="${bar}${ABU_TRACK}━"
+            bar="${bar}${ABU_TRACK}█"
         fi
     done
     cetak ""
@@ -96,7 +94,12 @@ gambar_layar() {
         cetak "$PESAN"
     fi
 
+    garis=""
+    for ((j = 0; j < LEBAR; j++)); do
+        garis="${garis}─"
+    done
     cetak ""
+    cetak "${ABU_GELAP}${garis}${RESET}"
     if [ "$BLINK" -eq 1 ]; then
         kursor="█"
     else
@@ -113,13 +116,13 @@ jalankan_langkah() {
     local idx="$1"
     shift
     local log pid i=0
-    local frames=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+    local frames=("◐" "◓" "◑" "◒")
     STATUS[$idx]="run"
     log=$(mktemp)
     "$@" > "$log" 2>&1 &
     pid=$!
     while kill -0 "$pid" 2>/dev/null; do
-        SPIN="${frames[$((i % 10))]}"
+        SPIN="${frames[$((i % 4))]}"
         i=$((i + 1))
         gambar_layar
         sleep 0.15
