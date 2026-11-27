@@ -209,9 +209,9 @@ main() {
     jalankan_semua || rc=1
 
     if [ "$rc" -eq 0 ]; then
-        # Setelah persiapan selesai, prompt di sesi ini berubah jadi [ ~$  ].
+        # Setelah persiapan selesai, prompt di sesi ini berubah jadi [ ~$  ] dengan petunjuk abu-abu di sebelahnya.
         # Pengaturan ini tidak ditulis ke .bashrc, jadi saat Termux dibuka lagi prompt kembali ke bawaan.
-        PS1='\[\e[38;2;255;105;0m\][ \w\$  ]\[\e[0m\] '
+        PS1='\[\e[38;2;255;105;0m\][ \w\$  ]\[\e[0m\] \[\e[38;2;122;128;144m\]Ketik : fastboot devices\[\e[0m\] '
     fi
 
     printf '\033[?25h'
