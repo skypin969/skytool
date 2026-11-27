@@ -368,7 +368,7 @@ proses_flash() {
     cetak "${PUTIH}Flashing process will start now...${RESET}"
     cetak ""
     rc=0
-    (cd "$folder" && PATH="$(dirname "$fb"):$PATH" bash "$folder/$skrip") || rc=$?
+    tampil_flash "$folder" "$folder/$skrip" "$fb" "$nama" || rc=$?
     # Seperti MiTool: setelah skrip selesai tidak ada prompt tambahan, hasilnya langsung dicatat
     cetak ""
     if [ "$rc" -eq 0 ]; then
@@ -379,6 +379,223 @@ proses_flash() {
     # Hasil tetap di layar: menu tidak digambar ulang dan tidak kembali ke daftar
     SKYTOOL_SELESAI=1
     return 0
+}
+
+# ===== Tampilan flashing untuk Termux (gaya sama dengan layar ekstrak di flash_rom_fastboot.sh) =====
+# Hanya tampilan. Script flash ROM dijalankan apa adanya; outputnya dibaca lalu digambar ulang.
+# Daftar tahap dibaca dari script flash (erase, flash, set_active, oem, reboot), jadi berlaku untuk ROM lain juga.
+
+# Membaca tahap dari script: keluarannya "jenis<TAB>nama", satu baris per tahap
+_fl_parse() {
+    grep -E '^[[:space:]]*fastboot \$\* (flash|erase|set_active|oem|reboot)([[:space:]]|$)' "$1" \
+        | grep -v '2>&1' \
+        | awk '{
+            if ($3 == "flash" || $3 == "erase") print $3 "\t" $4
+            else { nm = $3; if ($4 != "") nm = nm " " $4; print "finish\t" nm }
+        }' \
+        | awk -F'\t' '!seen[$0]++'
+}
+
+# Mencari nomor tahap: $1 = jenis, $2 = nama (untuk finish cukup awalan namanya)
+_fl_cari() {
+    local j
+    for ((j = 0; j < _fl_n; j++)); do
+        [ "${_fl_jenis[j]}" = "$1" ] || continue
+        if [ "$1" = finish ]; then
+            [[ "${_fl_nama[j]}" == "$2"* ]] || continue
+        else
+            [ "${_fl_nama[j]}" = "$2" ] || continue
+        fi
+        echo "$j"
+        return
+    done
+}
+
+# Tahap bersyarat (misalnya crclist) yang dilewati script tidak akan pernah dicetak fastboot.
+# Saat tahap berikutnya mulai, tahap sejenis yang masih "menunggu" di depannya ditandai dilewati.
+_fl_lewati_sebelum() {
+    local j
+    for ((j = 0; j < $2; j++)); do
+        if [ "${_fl_jenis[j]}" = "${_fl_jenis[$2]}" ] && [ "${_fl_stat[j]}" = wait ]; then
+            _fl_stat[j]=skip
+        fi
+    done
+}
+
+# Membaca satu baris output fastboot/script lalu memperbarui status tahap
+_fl_proses() {
+    local line="$1" re idx act
+    re="^(Erasing|Sending|Writing) (sparse )?'([^']+)'( ([0-9]+)/([0-9]+))?"
+    if [[ "$line" =~ $re ]]; then
+        act=${BASH_REMATCH[1]}
+        _fl_curj=flash
+        [ "$act" = Erasing ] && _fl_curj=erase
+        _fl_cur=${BASH_REMATCH[3]}
+        if [ -n "${BASH_REMATCH[5]}" ]; then
+            _fl_chunk="${BASH_REMATCH[5]}/${BASH_REMATCH[6]}"
+        fi
+        [ "$act" = Erasing ] && _fl_chunk=""
+        idx=$(_fl_cari "$_fl_curj" "$_fl_cur")
+        if [ -n "$idx" ] && [ "${_fl_stat[idx]}" = wait ]; then
+            _fl_lewati_sebelum "$_fl_curj" "$idx"
+            _fl_stat[idx]=run
+        fi
+    elif [[ "$line" == "Setting current slot"* ]]; then
+        _fl_curj=finish; _fl_cur=set_active; _fl_chunk=""
+    elif [[ "$line" == "Rebooting"* ]]; then
+        _fl_curj=finish; _fl_cur=reboot; _fl_chunk=""
+    elif [[ "$line" == "Finished."* ]]; then
+        if [ -n "$_fl_cur" ]; then
+            idx=$(_fl_cari "$_fl_curj" "$_fl_cur")
+            if [ -n "$idx" ]; then _fl_stat[idx]=done; fi
+        fi
+        _fl_cur=""; _fl_chunk=""
+    elif [[ "$line" =~ ^No\ partition\ ([^[:space:]]+)\ found ]]; then
+        idx=$(_fl_cari erase "${BASH_REMATCH[1]}")
+        if [ -n "$idx" ]; then _fl_stat[idx]=skip; fi
+    elif [[ "$line" == *FAILED* || "$line" == *error* ]]; then
+        _fl_gagal="$line"
+        if [ -n "$_fl_cur" ]; then
+            idx=$(_fl_cari "$_fl_curj" "$_fl_cur")
+            if [ -n "$idx" ]; then _fl_stat[idx]=fail; fi
+        fi
+    fi
+}
+
+# Satu baris status ala menu: [ OK ] [nama]
+_fl_baris() {
+    local tanda warna
+    case "$1" in
+        done) tanda="OK"; warna="$HIJAU_REDUP" ;;
+        run) tanda=">>"; warna="$ORANYE" ;;
+        fail) tanda="!!"; warna="$MERAH" ;;
+        skip) tanda="--"; warna="$ABU_GELAP" ;;
+        *) tanda="  "; warna="$ABU_GELAP" ;;
+    esac
+    printf '%s' "${PUTIH}[ ${warna}${tanda}${PUTIH} ] [${warna}$2${PUTIH}]${RESET}"
+}
+
+# Menggambar layar flashing. Gaya dan urutan sama dengan layar ekstrak (judul, bar 10 kotak, dua baris info).
+_fl_gambar() {
+    local j i bar="" persen=0 isi=0 dn=0 nF=0 dF=0 fc=-1 lo hi k sisa=0 detik extra
+    _fl_fidx=()
+    local nE=0 dE=0 nS=0 dS=0
+    for ((j = 0; j < _fl_n; j++)); do
+        case "${_fl_stat[j]}" in done|skip) dn=$((dn + 1)) ;; esac
+        case "${_fl_jenis[j]}" in
+            flash)
+                _fl_fidx[nF]=$j
+                case "${_fl_stat[j]}" in
+                    done|skip) dF=$((dF + 1)) ;;
+                    run) fc=$nF ;;
+                esac
+                nF=$((nF + 1))
+                ;;
+            erase)
+                nE=$((nE + 1))
+                case "${_fl_stat[j]}" in done|skip) dE=$((dE + 1)) ;; esac
+                ;;
+            finish)
+                nS=$((nS + 1))
+                case "${_fl_stat[j]}" in done|skip) dS=$((dS + 1)) ;; esac
+                ;;
+        esac
+    done
+    [ "$fc" -lt 0 ] && fc=$dF
+    [ "$fc" -ge "$nF" ] && fc=$((nF - 1))
+
+    if [ "$_fl_n" -gt 0 ]; then persen=$(( dn * 100 / _fl_n )); fi
+    isi=$(( persen / 10 ))
+    for ((i = 0; i < 10; i++)); do
+        if [ "$i" -lt "$isi" ]; then bar="${bar}${ORANYE}#"; else bar="${bar}${ABU_GELAP}-"; fi
+    done
+    detik=$(( SECONDS - _fl_mulai ))
+    if [ "$dn" -gt 0 ] && [ "$_fl_n" -gt "$dn" ]; then
+        sisa=$(( detik * (_fl_n - dn) / dn ))
+    fi
+
+    # Kembali ke posisi setelah header, lalu timpa bagian bawah (tanpa menghapus layar: tidak berkedip)
+    printf '%s8' "$ESC"
+    printf '\033[J'
+    cetak "${PUTIH}[${bar}${PUTIH}]  [  ${ORANYE}${persen}%${PUTIH}  ]${RESET}"
+    cetak "${PUTIH}[  ${ORANYE}$(t "tahap ${dn} dari ${_fl_n}" "step ${dn} of ${_fl_n}")${PUTIH}  ]  [  ${ORANYE}$(t "sisa ± ${sisa} detik" "left ± ${sisa} sec")${PUTIH}  ]${RESET}"
+    cetak ""
+
+    if [ -n "$_fl_gagal" ]; then
+        cetak "${MERAH}$(t "GAGAL: " "FAILED: ")${_fl_gagal:0:40}${RESET}"
+    elif [ "$_fl_selesai" = 1 ]; then
+        cetak "${HIJAU_REDUP}$(t "SELESAI" "COMPLETE")${RESET}"
+    else
+        extra=""
+        [ -n "$_fl_chunk" ] && extra="  ${_fl_chunk}"
+        if [ -n "$_fl_cur" ]; then
+            cetak "${PUTIH}$(t "SEKARANG: " "NOW: ")${ORANYE}${_fl_cur}${ABU_TEKS}${extra}${RESET}"
+        else
+            cetak ""
+        fi
+    fi
+    cetak ""
+
+    cetak "${KUNING_REDUP}$(t "[HAPUS DATA] ${dE}/${nE}" "[ERASE] ${dE}/${nE}")${RESET}"
+    cetak ""
+    cetak "${KUNING_REDUP}$(t "[FLASH IMAGE] ${dF}/${nF}" "[FLASH IMAGES] ${dF}/${nF}")${RESET}"
+    lo=$((fc - 2)); [ "$lo" -lt 0 ] && lo=0
+    hi=$((fc + 2)); [ "$hi" -ge "$nF" ] && hi=$((nF - 1))
+    for ((j = lo; j <= hi; j++)); do
+        k=${_fl_fidx[j]}
+        cetak "  $(_fl_baris "${_fl_stat[k]}" "${_fl_nama[k]}")"
+    done
+    cetak ""
+    cetak "${KUNING_REDUP}$(t "[SELESAI] ${dS}/${nS}" "[FINISH] ${dS}/${nS}")${RESET}"
+    cetak ""
+    cetak "${ABU_GELAP}$(t "Log: ~/skytool_flash.log" "Log: ~/skytool_flash.log")${RESET}"
+    printf '\033[J'
+}
+
+# Menjalankan script flash dan menampilkannya. Kode keluar script tetap dikembalikan apa adanya.
+tampil_flash() {
+    local folder="$1" skrip="$2" fb="$3" pilihan="$4" rc=0 line k nm j
+    _fl_rom=$(basename "$folder")
+    _fl_mulai=$SECONDS
+    : > "$HOME/skytool_flash.log"
+    _fl_n=0; _fl_nama=(); _fl_jenis=(); _fl_stat=()
+    while IFS=$'\t' read -r k nm; do
+        _fl_jenis[_fl_n]=$k
+        _fl_nama[_fl_n]=$nm
+        _fl_stat[_fl_n]=wait
+        _fl_n=$((_fl_n + 1))
+    done < <(_fl_parse "$skrip")
+    _fl_cur=""; _fl_curj=""; _fl_chunk=""; _fl_gagal=""; _fl_selesai=0
+    # Header sama dengan layar proses di atas (logo, versi, PROSES FLASH ROM); posisi setelahnya disimpan
+    judul_proses "$folder" "$pilihan"
+    printf '%s7' "$ESC"
+    _fl_gambar
+    while IFS= read -r line || [ -n "$line" ]; do
+        line=${line%$'\r'}
+        if [[ "$line" == __RC=* ]]; then
+            rc=${line#__RC=}
+            continue
+        fi
+        printf '%s\n' "$line" >> "$HOME/skytool_flash.log"
+        _fl_proses "$line"
+        _fl_gambar
+    done < <( (cd "$folder" && PATH="$(dirname "$fb"):$PATH" bash "$skrip" 2>&1); echo "__RC=$?" )
+
+    if [ "$rc" -eq 0 ]; then
+        _fl_selesai=1
+        for ((j = 0; j < _fl_n; j++)); do
+            if [ "${_fl_stat[j]}" = wait ]; then
+                case "${_fl_jenis[j]}" in
+                    finish) _fl_stat[j]=done ;;
+                    *) _fl_stat[j]=skip ;;
+                esac
+            fi
+        done
+    elif [ -z "$_fl_gagal" ]; then
+        _fl_gagal="exit code $rc"
+    fi
+    _fl_gambar
+    return "$rc"
 }
 
 pilih_cara_flash() {
