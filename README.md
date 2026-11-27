@@ -15,6 +15,19 @@ Skrip `setup.sh` akan:
 - meminta izin penyimpanan di awal (tekan Izinkan di layar HP),
 - memeriksa arsitektur HP (harus aarch64 atau arm),
 - memeriksa aplikasi Termux:API,
-- memasang paket: python, git, termux-api, libusb, android-tools.
+- memasang paket python, git, termux-api, libusb,
+- memasang adb dan fastboot dari termux-adb.
 
-Kalau muncul pesan `curl: command not found`, jalankan dulu `pkg install -y curl`, lalu ulangi perintah di atas.
+## Cek perangkat fastboot
+
+Setelah `setup.sh` selesai:
+
+1. Masukkan HP yang ingin dicek ke mode fastboot.
+2. Sambungkan HP itu ke HP Termux memakai kabel OTG.
+3. Jalankan perintah ini di Termux:
+
+```
+fastboot devices
+```
+
+Kalau muncul izin USB di layar HP, tekan Izinkan, lalu jalankan perintah tadi lagi.
