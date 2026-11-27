@@ -6,7 +6,10 @@
 set -e
 
 VERSI="v9.6.9"
-LEBAR=36
+# Lebar tampilan mengikuti lebar layar Termux (dibatasi supaya tetap rapi)
+LEBAR=$(( $(tput cols 2>/dev/null || echo 40) - 3 ))
+[ "$LEBAR" -lt 30 ] && LEBAR=30
+[ "$LEBAR" -gt 56 ] && LEBAR=56
 TOTAL=7
 ESC=$'\033'
 RESET="${ESC}[0m"
@@ -33,6 +36,11 @@ BLINK=1
 
 cetak() {
     printf '%s\033[K\n' "$1"
+}
+
+# Jeda singkat tanpa perintah luar (sleep bisa rusak saat apt upgrade mengganti libpcre2)
+jeda() {
+    read -r -t "$1" _ <> <(:) 2>/dev/null || true
 }
 
 # Satu baris judul dengan latar oranye. Bagian kosong diisi garis miring "╱" berwarna oranye gelap.
@@ -118,7 +126,7 @@ jalankan_langkah() {
         SPIN="${frames[$((i % 4))]}"
         i=$((i + 1))
         gambar_layar
-        sleep 0.15
+        jeda 0.15
     done
     if wait "$pid"; then
         STATUS[$idx]="ok"
@@ -216,7 +224,7 @@ STATUS[0]="ok"
 jalankan_langkah 1 cek_arsitektur
 jalankan_langkah 2 cek_termux_api
 jalankan_langkah 3 bash -c "yes | apt update"
-jalankan_langkah 4 bash -c "yes | apt upgrade"
+jalankan_langkah 4 bash -c "yes | apt upgrade && apt install -y --reinstall coreutils"
 jalankan_langkah 5 bash -c "yes | pkg install python git termux-api libusb"
 jalankan_langkah 6 pasang_termux_adb
 
