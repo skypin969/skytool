@@ -122,8 +122,10 @@ gambar_layar() {
 jalankan_langkah() {
     local idx="$1"
     shift
-    local log pid
+    local log pid rc=0 kontrol_job=""
     STATUS[$idx]="run"
+    # Bash menulis "[1]+ Done ..." ke layar saat pekerjaan latar selesai. Itu dimatikan selama langkah berjalan.
+    case $- in *m*) kontrol_job=1; set +m ;; esac
     log=$(mktemp)
     "$@" > "$log" 2>&1 &
     pid=$!
@@ -131,7 +133,9 @@ jalankan_langkah() {
         gambar_layar
         jeda 0.2
     done
-    if wait "$pid"; then
+    wait "$pid" || rc=$?
+    [ -n "$kontrol_job" ] && set -m
+    if [ "$rc" -eq 0 ]; then
         STATUS[$idx]="ok"
         gambar_layar
         rm -f "$log"
