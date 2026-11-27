@@ -190,6 +190,9 @@ cek_fastboot() {
     fi
 }
 
+# Font dipasang dulu, sebelum layar pertama digambar
+pasang_font || true
+
 clear 2>/dev/null || true
 
 # Langkah 1: izin penyimpanan (perlu tombol di layar HP)
@@ -211,7 +214,6 @@ if [ ! -d "$HOME/storage" ]; then
     exit 1
 fi
 STATUS[0]="ok"
-pasang_font || true
 
 # Langkah 2 sampai 7
 jalankan_langkah 1 cek_arsitektur
