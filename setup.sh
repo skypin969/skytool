@@ -72,16 +72,17 @@ susun_layar() {
     cetak ""
     for ((j = 0; j < TOTAL; j++)); do
         case "${STATUS[$j]}" in
-            ok)   cetak "  ${ORANYE}[ OK ] ${LABEL[$j]}${RESET}" ;;
+            ok)   cetak "  ${ORANYE}[ OK ]${RESET} ${PUTIH}${LABEL[$j]}${RESET}" ;;
             run)  cetak "  ${ORANYE_TERANG}[ .. ] ${LABEL[$j]}${RESET}" ;;
             fail) cetak "  ${MERAH}[ XX ] ${LABEL[$j]}${RESET}" ;;
-            *)    cetak "  ${ABU_GELAP}[    ] ${LABEL[$j]}${RESET}" ;;
+            *)    cetak "  ${PUTIH}[    ]${RESET} ${ABU_GELAP}${LABEL[$j]}${RESET}" ;;
         esac
     done
     if [ -n "$PESAN" ]; then
         cetak ""
         cetak "$PESAN"
     fi
+    cetak ""
     printf '\033[J'
 }
 
@@ -157,8 +158,23 @@ pasang_font() {
     termux-reload-settings 2>/dev/null || true
 }
 
+pasang_prompt() {
+    # Prompt Termux dibuat seperti [ ~$  ] berwarna oranye (ditambahkan sekali saja)
+    if ! grep -q "SKYTOOL_PROMPT" "$HOME/.bashrc" 2>/dev/null; then
+        cat >> "$HOME/.bashrc" << 'EOF'
+# SKYTOOL_PROMPT
+PS1='\[\e[38;2;255;105;0m\][ \w\$  ]\[\e[0m\] '
+EOF
+    fi
+}
+
 # Font dipasang dulu, sebelum layar pertama digambar
 pasang_font || true
+pasang_prompt || true
+
+# Kursor disembunyikan selama proses berjalan, lalu dimunculkan lagi di akhir
+printf '\033[?25l'
+trap 'printf "\033[?25h"' EXIT
 
 clear 2>/dev/null || true
 
