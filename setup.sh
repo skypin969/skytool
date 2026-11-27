@@ -159,7 +159,8 @@ pasang_termux_adb() {
     if [ ! -f "$PREFIX/etc/apt/sources.list.d/termux-adb.list" ]; then
         mkdir -p "$PREFIX/etc/apt/sources.list.d"
         echo "deb https://nohajc.github.io termux extras" > "$PREFIX/etc/apt/sources.list.d/termux-adb.list"
-        wget -qP "$PREFIX/etc/apt/trusted.gpg.d" https://nohajc.github.io/nohajc.gpg
+        mkdir -p "$PREFIX/etc/apt/trusted.gpg.d"
+        curl -fsSL -o "$PREFIX/etc/apt/trusted.gpg.d/nohajc.gpg" https://nohajc.github.io/nohajc.gpg
         yes | apt update
     fi
     yes | apt install termux-adb
