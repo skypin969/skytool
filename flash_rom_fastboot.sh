@@ -13,6 +13,9 @@ ORANYE="${ESC}[38;2;255;105;0m"
 ABU_TEKS="${ESC}[38;2;170;176;190m"
 ABU_GELAP="${ESC}[38;2;122;128;144m"
 MERAH="${ESC}[38;2;226;75;74m"
+# Judul daftar ROM: kuning dan hijau yang agak redup
+KUNING_REDUP="${ESC}[38;2;201;169;68m"
+HIJAU_REDUP="${ESC}[38;2;111;176;124m"
 
 # Folder yang dicari, sama seperti MiTool (termux.py): seluruh penyimpanan bersama HP.
 # Dibuat oleh termux-setup-storage pada setup.sh.
@@ -93,7 +96,7 @@ gambar_menu_rom() {
     cetak "${TEBAL}${ORANYE}ＦＬＡＳＨ ＲＯＭ ＦＡＳＴＢＯＯＴ ＴＧＺ${RESET}"
     cetak ""
 
-    cetak "${ABU_TEKS}[ROM FASTBOOT BELUM DI EKSTRAK]${RESET}"
+    cetak "${KUNING_REDUP}[ROM FASTBOOT BELUM DI EKSTRAK]${RESET}"
     for ((i = 0; i < ${#MENU_NAMA[@]}; i++)); do
         if [ "${MENU_JENIS[i]}" = "tgz" ]; then
             ada_tgz=1
@@ -105,7 +108,7 @@ gambar_menu_rom() {
     fi
     cetak ""
 
-    cetak "${ABU_TEKS}[ROM FASTBOOT SUDAH DI EKSTRAK]${RESET}"
+    cetak "${HIJAU_REDUP}[ROM FASTBOOT SUDAH DI EKSTRAK]${RESET}"
     for ((i = 0; i < ${#MENU_NAMA[@]}; i++)); do
         if [ "${MENU_JENIS[i]}" = "ekstrak" ]; then
             ada_ekstrak=1
