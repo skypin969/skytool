@@ -46,9 +46,10 @@ susun_layar() {
         fi
     done
     persen=$(( selesai * 100 / TOTAL ))
-    isi=$(( persen / 5 ))
+    # Bilah 10 kotak tanpa spasi di dalam kurung; kotak yang sudah terisi memakai tanda pagar oranye
+    isi=$(( persen / 10 ))
     bar=""
-    for ((j = 0; j < 20; j++)); do
+    for ((j = 0; j < 10; j++)); do
         if [ "$j" -lt "$isi" ]; then
             bar="${bar}${ORANYE}#"
         else
@@ -60,14 +61,14 @@ susun_layar() {
     cetak "${TEBAL}${PUTIH}ＳＫＹ${ORANYE}ＴＯＯＬ${RESET} ${ABU_TEKS}${VERSI}${RESET}"
     cetak "${TEBAL}${ORANYE}ＭＥＮＹＩＡＰＫＡＮ　ＴＥＲＭＵＸ${RESET}"
     cetak ""
-    cetak "[${bar}${RESET}] ${persen}%  (${selesai}/${TOTAL})"
+    cetak "${PUTIH}[${bar}${PUTIH}]  [  ${ORANYE}${persen}%${PUTIH}  ]  [  ${ORANYE}${selesai}/${TOTAL}${PUTIH}  ]${RESET}"
     cetak ""
     for ((j = 0; j < TOTAL; j++)); do
         case "${STATUS[$j]}" in
-            ok)   cetak "  ${PUTIH}[  ${RESET}${ORANYE}${LABEL[$j]}${RESET}${PUTIH}  ]${RESET}" ;;
-            run)  cetak "  ${ORANYE_TERANG}[  ${LABEL[$j]}  ]${RESET}" ;;
-            fail) cetak "  ${MERAH}[  ${LABEL[$j]}  ]${RESET}" ;;
-            *)    cetak "  ${ABU_GELAP}[  ${LABEL[$j]}  ]${RESET}" ;;
+            ok)   cetak "${PUTIH}[  ${ORANYE}OK${PUTIH}  ] [  ${ORANYE}${LABEL[$j]}${PUTIH}  ]${RESET}" ;;
+            run)  cetak "${ORANYE_TERANG}[  ${LABEL[$j]}  ]${RESET}" ;;
+            fail) cetak "${MERAH}[  ${LABEL[$j]}  ]${RESET}" ;;
+            *)    cetak "${ABU_GELAP}[  ${LABEL[$j]}  ]${RESET}" ;;
         esac
     done
     if [ -n "$PESAN" ]; then
@@ -183,7 +184,7 @@ pasang_pembungkus_fastboot() {
             printf '%s\n' "$keluaran"
         fi
         # Setelah perintah fastboot dijalankan, petunjuk hilang dan prompt kembali [ ~$  ]
-        PS1='\[\e[38;2;255;255;255m\][ \[\e[38;2;255;105;0m\]\w\$\[\e[38;2;255;255;255m\]  ]\[\e[0m\] '
+        PS1='\[\e[38;2;255;255;255m\][  \[\e[38;2;255;105;0m\]\w\$\[\e[38;2;255;255;255m\]  ]\[\e[0m\] '
         return $rc
     }
 }
@@ -232,7 +233,7 @@ main() {
     if [ "$rc" -eq 0 ]; then
         # Setelah persiapan selesai, prompt di sesi ini berubah jadi [ ~$  ] dengan petunjuk abu-abu di sebelahnya.
         # Pengaturan ini tidak ditulis ke .bashrc, jadi saat Termux dibuka lagi prompt kembali ke bawaan.
-        PS1='\[\e[38;2;255;255;255m\][ \[\e[38;2;255;105;0m\]\w\$\[\e[38;2;255;255;255m\]  ]\[\e[0m\] \[\e[38;2;122;128;144m\]Ketik : fastboot devices\[\e[0m\] '
+        PS1='\[\e[38;2;255;255;255m\][  \[\e[38;2;255;105;0m\]\w\$\[\e[38;2;255;255;255m\]  ]\[\e[0m\] \[\e[38;2;122;128;144m\]Ketik : fastboot devices\[\e[0m\] '
         pasang_pembungkus_fastboot
     fi
 
