@@ -138,7 +138,7 @@ gambar_menu_rom() {
     printf '\033[J'
 }
 
-# Menggambar progres ekstrak di bawah daftar ROM (tiga baris, mulai di baris PROGRES_BARIS)
+# Menggambar progres ekstrak di bawah daftar ROM (tiga baris, mulai dari posisi kursor yang disimpan)
 gambar_progres() {
     local nama="$1" selesai_b="$2" total_b="$3" detik="$4"
     local persen=0 isi=0 kecepatan=0 sisa=0 bar="" j
@@ -160,20 +160,20 @@ gambar_progres() {
     if [ "$kecepatan" -gt 0 ]; then
         sisa=$(( (total_b - selesai_b) / kecepatan ))
     fi
-    printf '\033[%d;1H' "$PROGRES_BARIS"
+    # Kembali ke posisi kursor yang disimpan di awal ekstrak, lalu hapus isi di bawahnya
+    printf '%s8%s[J' "$ESC" "$ESC"
     cetak "${PUTIH}MENGEKSTRAK: ${ORANYE}${nama}${RESET}"
     cetak "${PUTIH}[${bar}${PUTIH}]  [  ${ORANYE}${persen}%${PUTIH}  ]  [  ${ORANYE}$(awk -v a="$selesai_b" -v b="$total_b" 'BEGIN{printf "%.1f GB / %.1f GB", a/1073741824, b/1073741824}')${PUTIH}  ]${RESET}"
     cetak "${PUTIH}[  ${ORANYE}$(awk -v k="$kecepatan" 'BEGIN{printf "%.1f MB/s", k/1048576}')${PUTIH}  ]  [  ${ORANYE}sisa ± ${sisa} detik${PUTIH}  ]${RESET}"
 }
 
 # Mengekstrak satu file .tgz ke folder <nama>_extracted di lokasi yang sama, seperti MiTool.
-# Argumen: lokasi file .tgz, lalu nomor baris tempat progres ditampilkan.
+# Argumen: lokasi file .tgz.
 ekstrak_rom() {
     local tgz="$1" dir stem dest total rc_file pid mulai sekarang selesai_b rc f salah=0
     dir=$(dirname "$tgz")
     stem=$(basename "$tgz" .tgz)
     dest="$dir/${stem}_extracted"
-    PROGRES_BARIS="$2"
 
     if ! tar -tzf "$tgz" > /dev/null 2>&1; then
         MENU_PESAN="${MERAH}File ini tidak bisa dibuka sebagai arsip .tgz.${RESET}"
@@ -201,6 +201,8 @@ ekstrak_rom() {
     pid=$!
     disown "$pid" 2>/dev/null
     mulai=$(date +%s)
+    # Simpan posisi kursor (tepat di bawah input nomor), progres akan digambar ulang dari sini
+    printf '%s7' "$ESC"
     while [ ! -s "$rc_file" ]; do
         sekarang=$(date +%s)
         selesai_b=$(du -sb "$dest" 2>/dev/null | cut -f1)
@@ -239,8 +241,7 @@ menu_rom() {
             *)
                 if [ "$pilihan" -ge 1 ] && [ "$pilihan" -le "${#MENU_NAMA[@]}" ]; then
                     if [ "${MENU_JENIS[pilihan - 1]}" = "tgz" ]; then
-                        printf '\033[%d;1H\033[J' "$((BARIS + 1))"
-                        ekstrak_rom "${MENU_JALUR[pilihan - 1]}" "$((BARIS + 1))"
+                        ekstrak_rom "${MENU_JALUR[pilihan - 1]}"
                     else
                         MENU_PESAN="${ABU_TEKS}Langkah flash untuk pilihan ini belum dibuat.${RESET}"
                     fi
