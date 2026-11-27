@@ -65,7 +65,7 @@ susun_layar() {
 
     cetak ""
     cetak "${PUTIH}SKY${ORANYE}TOOL${RESET} ${ABU_TEKS}${VERSI}${RESET}"
-    cetak "${ORANYE_TERANG}MENYIAPKAN TERMUX${RESET}"
+    cetak "${ORANYE}MENYIAPKAN TERMUX${RESET}"
     cetak ""
     cetak "[${bar}${RESET}] ${persen}%  (${selesai}/${TOTAL})"
     cetak ""
