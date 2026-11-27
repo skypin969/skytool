@@ -1,28 +1,20 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # SKYTOOL setup v9.6.9
 # Persiapan Termux sebelum menjalankan SKYTOOL.
-# Memeriksa syarat, memasang paket, dan menyiapkan adb/fastboot yang bisa mengakses USB.
-
-set -e
+# Aman dijalankan lewat `source` di sesi Termux: tidak memakai set -e, tidak memakai exit,
+# dan tidak memasang trap, supaya error tidak menutup Termux.
 
 VERSI="v9.6.9"
-TOTAL=7
 ESC=$'\033'
 RESET="${ESC}[0m"
-# Warna sama dengan mockup (kode warna 24-bit)
 TEBAL="${ESC}[1m"
+# Warna sama dengan mockup (kode warna 24-bit)
 PUTIH="${ESC}[38;2;255;255;255m"
 ORANYE="${ESC}[38;2;255;105;0m"
 ORANYE_TERANG="${ESC}[38;2;255;178;122m"
 ABU_TEKS="${ESC}[38;2;170;176;190m"
-ABU="${ESC}[38;2;170;176;190m"
 ABU_GELAP="${ESC}[38;2;122;128;144m"
-ABU_TRACK="${ESC}[38;2;27;30;38m"
 MERAH="${ESC}[38;2;226;75;74m"
-
-LABEL=("izin penyimpanan" "arsitektur HP" "Termux:API" "apt update" "apt upgrade" "pasang python, git, libusb" "adb & fastboot (termux-adb)")
-STATUS=(pending pending pending pending pending pending pending)
-PESAN=""
 
 cetak() {
     printf '%s\033[K\n' "$1"
@@ -45,7 +37,7 @@ ulangi() {
     return 1
 }
 
-# Menyusun isi layar di memori (tanpa mencetak)
+# Menyusun isi layar di memori. Memakai TOTAL, LABEL, STATUS, dan PESAN dari fungsi pemanggil.
 susun_layar() {
     local selesai=0 persen isi j bar
     for ((j = 0; j < TOTAL; j++)); do
@@ -94,7 +86,7 @@ gambar_layar() {
 }
 
 # Menjalankan satu langkah di latar belakang sambil layar digambar ulang.
-# Argumen: nomor langkah, lalu perintah yang dijalankan.
+# Argumen: nomor langkah, lalu perintah yang dijalankan. Mengembalikan 1 kalau gagal.
 jalankan_langkah() {
     local idx="$1"
     shift
@@ -111,14 +103,14 @@ jalankan_langkah() {
         STATUS[$idx]="ok"
         gambar_layar
         rm -f "$log"
-    else
-        STATUS[$idx]="fail"
-        gambar_layar
-        echo ""
-        tail -n 15 "$log"
-        rm -f "$log"
-        exit 1
+        return 0
     fi
+    STATUS[$idx]="fail"
+    gambar_layar
+    echo ""
+    tail -n 15 "$log"
+    rm -f "$log"
+    return 1
 }
 
 cek_arsitektur() {
@@ -143,10 +135,10 @@ pasang_termux_adb() {
         mkdir -p "$PREFIX/etc/apt/sources.list.d"
         echo "deb https://nohajc.github.io termux extras" > "$PREFIX/etc/apt/sources.list.d/termux-adb.list"
         mkdir -p "$PREFIX/etc/apt/trusted.gpg.d"
-        curl -fsSL -o "$PREFIX/etc/apt/trusted.gpg.d/nohajc.gpg" https://nohajc.github.io/nohajc.gpg
+        curl -fsSL -o "$PREFIX/etc/apt/trusted.gpg.d/nohajc.gpg" https://nohajc.github.io/nohajc.gpg || return 1
         yes | apt update
     fi
-    yes | apt install termux-adb
+    yes | apt install termux-adb || return 1
     ln -sf "$PREFIX/bin/termux-fastboot" "$PREFIX/bin/fastboot"
     ln -sf "$PREFIX/bin/termux-adb" "$PREFIX/bin/adb"
 }
@@ -158,8 +150,8 @@ pasang_font() {
     termux-reload-settings 2>/dev/null || true
 }
 
+# Prompt Termux dibuat seperti [ ~$  ] berwarna oranye (ditulis ke .bashrc sekali saja)
 pasang_prompt() {
-    # Prompt Termux dibuat seperti [ ~$  ] berwarna oranye (ditambahkan sekali saja)
     if ! grep -q "SKYTOOL_PROMPT" "$HOME/.bashrc" 2>/dev/null; then
         cat >> "$HOME/.bashrc" << 'EOF'
 # SKYTOOL_PROMPT
@@ -168,43 +160,60 @@ EOF
     fi
 }
 
-# Font dipasang dulu, sebelum layar pertama digambar
-pasang_font || true
-pasang_prompt || true
+# Semua langkah instalasi. Berhenti di langkah pertama yang gagal.
+jalankan_semua() {
+    jalankan_langkah 1 cek_arsitektur || return 1
+    jalankan_langkah 2 cek_termux_api || return 1
+    jalankan_langkah 3 ulangi bash -c "yes | apt update" || return 1
+    jalankan_langkah 4 ulangi bash -c "yes | apt upgrade && apt install -y --reinstall coreutils" || return 1
+    jalankan_langkah 5 ulangi bash -c "yes | pkg install python git termux-api libusb" || return 1
+    jalankan_langkah 6 pasang_termux_adb || return 1
+}
 
-# Kursor disembunyikan selama proses berjalan, lalu dimunculkan lagi di akhir
-printf '\033[?25l'
-trap 'printf "\033[?25h"' EXIT
+main() {
+    local TOTAL=7 PESAN=""
+    local -a LABEL=("izin penyimpanan" "arsitektur HP" "Termux:API" "apt update" "apt upgrade" "pasang python, git, libusb" "adb & fastboot (termux-adb)")
+    local -a STATUS=(pending pending pending pending pending pending pending)
 
-clear 2>/dev/null || true
+    # Kursor disembunyikan selama proses berjalan, lalu dimunculkan lagi di akhir
+    printf '\033[?25l'
 
-# Langkah 1: izin penyimpanan (perlu tombol di layar HP)
-STATUS[0]="run"
-if [ ! -d "$HOME/storage" ]; then
-    PESAN="Tekan Izinkan di layar HP."
+    # Font dan prompt dipasang dulu, sebelum layar pertama digambar
+    pasang_font || true
+    pasang_prompt || true
+    PS1='\[\e[38;2;255;105;0m\][ \w\$  ]\[\e[0m\] '
+
+    clear 2>/dev/null || true
+
+    # Langkah 1: izin penyimpanan (perlu tombol di layar HP)
+    STATUS[0]="run"
+    if [ ! -d "$HOME/storage" ]; then
+        PESAN="Tekan Izinkan di layar HP."
+        gambar_layar
+        termux-setup-storage || true
+        local i
+        for i in $(seq 1 60); do
+            [ -d "$HOME/storage" ] && break
+            jeda 1
+        done
+        PESAN=""
+    fi
+    if [ ! -d "$HOME/storage" ]; then
+        STATUS[0]="fail"
+        gambar_layar
+        echo "Izin penyimpanan belum diberikan. Jalankan lagi perintah awal di README."
+        printf '\033[?25h'
+        return 1
+    fi
+    STATUS[0]="ok"
     gambar_layar
-    termux-setup-storage || true
-    for _ in $(seq 1 60); do
-        [ -d "$HOME/storage" ] && break
-        jeda 1
-    done
-    PESAN=""
-fi
-if [ ! -d "$HOME/storage" ]; then
-    STATUS[0]="fail"
-    gambar_layar
-    echo "Izin penyimpanan belum diberikan. Jalankan lagi perintah awal di README."
-    exit 1
-fi
-STATUS[0]="ok"
-gambar_layar
 
-# Langkah 2 sampai 7
-jalankan_langkah 1 cek_arsitektur
-jalankan_langkah 2 cek_termux_api
-jalankan_langkah 3 ulangi bash -c "yes | apt update"
-jalankan_langkah 4 ulangi bash -c "yes | apt upgrade && apt install -y --reinstall coreutils"
-jalankan_langkah 5 ulangi bash -c "yes | pkg install python git termux-api libusb"
-jalankan_langkah 6 pasang_termux_adb
+    # Langkah 2 sampai 7
+    local rc=0
+    jalankan_semua || rc=1
 
-gambar_layar
+    printf '\033[?25h'
+    return $rc
+}
+
+main
