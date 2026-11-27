@@ -94,8 +94,6 @@ gambar_menu_rom() {
     cetak ""
     cetak "${TEBAL}${PUTIH}ＳＫＹ${ORANYE}ＴＯＯＬ${RESET} ${ABU_TEKS}${VERSI}${RESET}"
     cetak ""
-    cetak "${TEBAL}${ORANYE}ＭＥＮＵ　ＴＯＯＬ${RESET}"
-    cetak ""
     cetak "${TEBAL}${ORANYE}FLASH ROM FASTBOOT TGZ${RESET}"
     cetak ""
 
