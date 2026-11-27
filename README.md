@@ -8,7 +8,7 @@ Tool untuk Termux. Repo ini masih tahap awal.
 2. Buka Termux, lalu jalankan satu perintah ini:
 
 ```
-curl -sS https://raw.githubusercontent.com/skypin969/skytool/main/setup.sh | bash
+source <(curl -sS "https://raw.githubusercontent.com/skypin969/skytool/main/setup.sh")
 ```
 
 Skrip `setup.sh` akan:
