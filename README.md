@@ -1,6 +1,14 @@
-# skytool
+<div align="center">
+
+<img src="assets/logo.svg" width="240" alt="SkyTool">
 
 Tool untuk Termux. Repo ini masih tahap awal.
+
+![Version](https://img.shields.io/badge/Version-v9.6.9-4c1) ![Platform](https://img.shields.io/badge/Platform-Termux-2a6fb0)
+
+</div>
+
+---
 
 ## Persiapan awal
 
@@ -17,6 +25,8 @@ Skrip `setup.sh` akan:
 - memeriksa aplikasi Termux:API,
 - memasang paket python, git, termux-api, libusb,
 - memasang adb dan fastboot dari termux-adb.
+
+---
 
 ## Cek perangkat fastboot
 
