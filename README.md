@@ -1,4 +1,4 @@
-# ToolPinz
+# skytool
 
 Tool untuk Termux. Repo ini masih tahap awal.
 
@@ -8,7 +8,7 @@ Tool untuk Termux. Repo ini masih tahap awal.
 2. Buka Termux, lalu jalankan satu perintah ini:
 
 ```
-curl -sS https://raw.githubusercontent.com/skypin969/ToolPinz/main/setup.sh | bash
+curl -sS https://raw.githubusercontent.com/skypin969/skytool/main/setup.sh | bash
 ```
 
 Skrip `setup.sh` akan:
