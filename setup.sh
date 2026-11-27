@@ -157,22 +157,6 @@ pasang_font() {
     termux-reload-settings 2>/dev/null || true
 }
 
-# Cek perangkat fastboot langsung setelah setup selesai.
-cek_fastboot() {
-    local hasil
-    hasil=$(fastboot devices 2>&1 < /dev/null || true)
-    echo ""
-    if echo "$hasil" | grep -qE '[[:space:]]fastboot$'; then
-        echo "  Perangkat fastboot terdeteksi:"
-        echo "$hasil" | grep -E '[[:space:]]fastboot$'
-    else
-        echo "  Belum ada perangkat fastboot."
-        echo "  Sambungkan HP dalam mode fastboot lewat OTG."
-        echo "  Kalau muncul izin USB di layar HP, tekan Izinkan."
-        echo "  Lalu jalankan lagi: fastboot devices"
-    fi
-}
-
 # Font dipasang dulu, sebelum layar pertama digambar
 pasang_font || true
 
@@ -208,4 +192,3 @@ jalankan_langkah 5 ulangi bash -c "yes | pkg install python git termux-api libus
 jalankan_langkah 6 pasang_termux_adb
 
 gambar_layar
-cek_fastboot
