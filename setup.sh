@@ -44,30 +44,23 @@ ulangi() {
 
 # Menyusun isi layar di memori. Memakai TOTAL, LABEL, STATUS, dan PESAN dari fungsi pemanggil.
 susun_layar() {
-    local selesai=0 persen isi j bar pos
+    local selesai=0 persen j bar pos
     for ((j = 0; j < TOTAL; j++)); do
         if [ "${STATUS[$j]}" = "ok" ]; then
             selesai=$((selesai + 1))
         fi
     done
     persen=$(( selesai * 100 / TOTAL ))
-    # Bilah 10 kotak tanpa spasi di dalam kurung; kotak yang sudah terisi memakai tanda pagar oranye.
-    # Dua kotak abu-abu bergerak di atas kotak yang sudah terisi (tanda pagar tidak ikut bergerak).
-    isi=$(( persen / 10 ))
-    pos=0
-    if [ "$isi" -gt 0 ]; then
-        pos=$(( KILAT % isi ))
-    fi
+    # Bilah 10 kotak tanpa spasi di dalam kurung, seluruhnya oranye.
+    # Satu kotak abu-abu berpindah dari kiri ke kanan, satu kotak per langkah (sekitar 0,5 detik).
+    # KILAT bertambah tiap 0,2 detik, jadi pindah kotak setiap 2 sampai 3 gambar (2/5 dari KILAT).
+    pos=$(( (KILAT * 2 / 5) % 10 ))
     bar=""
     for ((j = 0; j < 10; j++)); do
-        if [ "$j" -lt "$isi" ]; then
-            if [ "$j" -ge "$pos" ] && [ "$j" -lt $(( pos + 2 )) ]; then
-                bar="${bar}${ABU_GELAP}#"
-            else
-                bar="${bar}${ORANYE}#"
-            fi
-        else
+        if [ "$j" -eq "$pos" ]; then
             bar="${bar}${ABU_GELAP}#"
+        else
+            bar="${bar}${ORANYE}#"
         fi
     done
 
