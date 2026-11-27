@@ -17,15 +17,20 @@ MERAH="${ESC}[38;2;226;75;74m"
 
 # Folder Download di Termux (dibuat oleh termux-setup-storage pada setup.sh)
 MENU_DL="$HOME/storage/downloads"
-# Pesan singkat di bawah daftar, misalnya kalau nomor salah
+# Pesan singkat di bawah layar, misalnya kalau nomor salah
 MENU_PESAN=""
-# Isi daftar: nama yang tampil, lokasi, dan jenisnya (tgz atau ekstrak)
+# Isi daftar ROM: nama yang tampil, lokasi, dan jenisnya (tgz atau ekstrak)
 MENU_NAMA=()
 MENU_JALUR=()
 MENU_JENIS=()
 
 cetak() {
     printf '%s\033[K\n' "$1"
+}
+
+# Satu baris menu: nomor dan nama dengan lebar tetap 27 karakter supaya kurung tutup sejajar
+baris_menu() {
+    printf '%s' "${PUTIH}[  ${ORANYE}$1${PUTIH}  ] [  ${ORANYE}$(printf '%-27s' "$2")${PUTIH}  ]${RESET}"
 }
 
 # Sama seperti MiTool (rom.py): folder ROM dikenali dari ISINYA, bukan dari namanya.
@@ -61,24 +66,44 @@ muat_daftar() {
     done < <(find "$MENU_DL" -path '*/Android' -prune -o -type d -print0 | sort -z)
 }
 
-# Menggambar seluruh layar menu
-gambar_menu() {
-    local i nomor ada_tgz=0 ada_ekstrak=0
+# Layar menu utama: tiga pilihan dan KELUAR
+gambar_menu_utama() {
     clear
     cetak ""
     cetak "${TEBAL}${PUTIH}ＳＫＹ${ORANYE}ＴＯＯＬ${RESET} ${ABU_TEKS}${VERSI}${RESET}"
     cetak ""
     cetak "${TEBAL}${ORANYE}ＭＥＮＵ　ＴＯＯＬ${RESET}"
     cetak ""
-    cetak "${TEBAL}${ORANYE}FLASH ROM FASTBOOT${RESET}"
+    cetak "$(baris_menu 1 "FLASH ROM FASTBOOT TGZ")"
+    cetak "$(baris_menu 2 "FLASH FILE IMG")"
+    cetak "$(baris_menu 3 "ADB SIDELOAD")"
+    cetak ""
+    cetak "${ABU_GELAP}[  0  ] [  KELUAR  ]${RESET}"
+    cetak ""
+    if [ -n "$MENU_PESAN" ]; then
+        cetak "$MENU_PESAN"
+        cetak ""
+    fi
+    printf '\033[J'
+}
+
+# Layar FLASH ROM FASTBOOT TGZ: daftar file .tgz dan folder ROM yang sudah diekstrak
+gambar_menu_rom() {
+    local i ada_tgz=0 ada_ekstrak=0
+    clear
+    cetak ""
+    cetak "${TEBAL}${PUTIH}ＳＫＹ${ORANYE}ＴＯＯＬ${RESET} ${ABU_TEKS}${VERSI}${RESET}"
+    cetak ""
+    cetak "${TEBAL}${ORANYE}ＭＥＮＵ　ＴＯＯＬ${RESET}"
+    cetak ""
+    cetak "${TEBAL}${ORANYE}FLASH ROM FASTBOOT TGZ${RESET}"
     cetak ""
 
     cetak "${ABU_TEKS}ROM .tgz di folder Download:${RESET}"
     for ((i = 0; i < ${#MENU_NAMA[@]}; i++)); do
         if [ "${MENU_JENIS[i]}" = "tgz" ]; then
             ada_tgz=1
-            nomor=$((i + 1))
-            cetak "${PUTIH}[  ${ORANYE}${nomor}${PUTIH}  ] [  ${ORANYE}${MENU_NAMA[i]}${PUTIH}  ]${RESET}"
+            cetak "$(baris_menu $((i + 1)) "${MENU_NAMA[i]}")"
         fi
     done
     if [ "$ada_tgz" -eq 0 ]; then
@@ -90,8 +115,7 @@ gambar_menu() {
     for ((i = 0; i < ${#MENU_NAMA[@]}; i++)); do
         if [ "${MENU_JENIS[i]}" = "ekstrak" ]; then
             ada_ekstrak=1
-            nomor=$((i + 1))
-            cetak "${PUTIH}[  ${ORANYE}${nomor}${PUTIH}  ] [  ${ORANYE}${MENU_NAMA[i]}${PUTIH}  ]${RESET}"
+            cetak "$(baris_menu $((i + 1)) "${MENU_NAMA[i]}")"
         fi
     done
     if [ "$ada_ekstrak" -eq 0 ]; then
@@ -108,12 +132,12 @@ gambar_menu() {
     printf '\033[J'
 }
 
-# Loop menu: tampilkan daftar, baca pilihan, ulangi sampai pengguna memilih 0
-menu_utama() {
+# Layar FLASH ROM FASTBOOT TGZ: membaca pilihan sampai pengguna memilih 0 (kembali)
+menu_rom() {
     local pilihan
     while true; do
         muat_daftar
-        gambar_menu
+        gambar_menu_rom
         printf '%s' "${PUTIH}Pilih nomor, lalu Enter: ${RESET}"
         read -r pilihan || return 0
         MENU_PESAN=""
@@ -121,7 +145,7 @@ menu_utama() {
             "")
                 ;;
             0)
-                clear
+                MENU_PESAN=""
                 return 0
                 ;;
             *[!0-9]*)
@@ -133,6 +157,34 @@ menu_utama() {
                 else
                     MENU_PESAN="${MERAH}Nomor itu tidak ada di daftar.${RESET}"
                 fi
+                ;;
+        esac
+    done
+}
+
+# Layar menu utama: membaca pilihan sampai pengguna memilih 0 (KELUAR)
+menu_utama() {
+    local pilihan
+    while true; do
+        gambar_menu_utama
+        printf '%s' "${PUTIH}Pilih nomor, lalu Enter: ${RESET}"
+        read -r pilihan || return 0
+        MENU_PESAN=""
+        case "$pilihan" in
+            "")
+                ;;
+            0)
+                clear
+                return 0
+                ;;
+            1)
+                menu_rom
+                ;;
+            2|3)
+                MENU_PESAN="${ABU_TEKS}Menu ini belum dibuat.${RESET}"
+                ;;
+            *)
+                MENU_PESAN="${MERAH}Nomor itu tidak ada di daftar.${RESET}"
                 ;;
         esac
     done
