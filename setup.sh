@@ -59,7 +59,7 @@ susun_layar() {
         if [ "$j" -lt "$isi" ]; then
             bar="${bar}${ORANYE}#"
         else
-            bar="${bar}${ABU_TRACK}-"
+            bar="${bar} "
         fi
     done
 
