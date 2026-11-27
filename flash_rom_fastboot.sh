@@ -26,6 +26,8 @@ MENU_PESAN=""
 MENU_NAMA=()
 MENU_JALUR=()
 MENU_JENIS=()
+# Folder hasil ekstrak terakhir, dipakai untuk langsung membuka pilihan cara flash
+EKSTRAK_HASIL=""
 
 # Jumlah baris yang sudah ditulis di layar, dipakai untuk menentukan posisi progres ekstrak
 BARIS=0
@@ -231,8 +233,85 @@ ekstrak_rom() {
         MENU_PESAN="${MERAH}Ekstrak gagal. Arsip ini bukan ROM fastboot yang valid.${RESET}"
         return 1
     fi
+    EKSTRAK_HASIL="$dest"
     MENU_PESAN="${PUTIH}[  ${ORANYE}OK${PUTIH}  ] [  ${ORANYE}ekstrak selesai: $(basename "$dest")${PUTIH}  ]${RESET}"
     return 0
+}
+
+# Menampilkan judul layar yang sama dengan layar ROM
+judul_layar() {
+    clear
+    cetak ""
+    cetak_logo
+    cetak ""
+    cetak "${ABU_TEKS}${VERSI}${RESET}"
+    cetak ""
+    cetak "${TEBAL}${ORANYE}ＦＬＡＳＨ ＲＯＭ ＦＡＳＴＢＯＯＴ ＴＧＺ${RESET}"
+    cetak ""
+}
+
+# Pilihan cara flash untuk satu folder ROM yang sudah diekstrak.
+# Hanya skrip yang benar-benar ada di folder itu yang ditampilkan, seperti MiTool (flash.py).
+pilih_cara_flash() {
+    local folder="$1" pilihan i stem
+    local -a skrip=() nama=() ket=()
+    while true; do
+        skrip=(); nama=(); ket=()
+        for stem in flash_all flash_all_lock flash_all_except_data_storage flash_all_except_storage; do
+            [ -f "$folder/$stem.sh" ] || continue
+            skrip+=("$stem.sh")
+            case "$stem" in
+                flash_all)
+                    nama+=("Flash semua"); ket+=("Bootloader tetap terbuka.") ;;
+                flash_all_lock)
+                    nama+=("Flash semua + kunci bootloader"); ket+=("Bootloader dikunci lagi setelah flash.") ;;
+                flash_all_except_data_storage)
+                    nama+=("Flash tanpa hapus data"); ket+=("Foto dan aplikasi tetap ada.") ;;
+                flash_all_except_storage)
+                    nama+=("Flash tanpa penyimpanan"); ket+=("Bagian penyimpanan tidak ditulis.") ;;
+            esac
+        done
+
+        judul_layar
+        cetak "${ABU_TEKS}ROM dipilih: ${ORANYE}$(basename "$folder")${RESET}"
+        cetak ""
+        cetak "${ABU_TEKS}Pilih cara flash:${RESET}"
+        for ((i = 0; i < ${#skrip[@]}; i++)); do
+            cetak "$(baris_rom $((i + 1)) "${nama[i]}")"
+            cetak "      ${ABU_GELAP}${ket[i]}${RESET}"
+        done
+        if [ "${#skrip[@]}" -eq 0 ]; then
+            cetak "${MERAH}  (tidak ada skrip flash di folder ini)${RESET}"
+        fi
+        cetak ""
+        cetak "${ABU_GELAP}[  0  ] [  kembali  ]${RESET}"
+        cetak ""
+        if [ -n "$MENU_PESAN" ]; then
+            cetak "$MENU_PESAN"
+            cetak ""
+        fi
+        printf '\033[J'
+        printf '%s' "${PUTIH}Pilih nomor, lalu Enter: ${RESET}"
+        read -r pilihan || return 0
+        MENU_PESAN=""
+        case "$pilihan" in
+            "")
+                ;;
+            0)
+                return 0
+                ;;
+            *[!0-9]*)
+                MENU_PESAN="${MERAH}Ketik angka saja.${RESET}"
+                ;;
+            *)
+                if [ "$pilihan" -ge 1 ] && [ "$pilihan" -le "${#skrip[@]}" ]; then
+                    MENU_PESAN="${ABU_TEKS}Proses flash untuk pilihan ini belum dibuat.${RESET}"
+                else
+                    MENU_PESAN="${MERAH}Nomor itu tidak ada di daftar.${RESET}"
+                fi
+                ;;
+        esac
+    done
 }
 
 # Membaca pilihan sampai pengguna memilih 0 (kembali ke menu utama)
@@ -256,9 +335,12 @@ menu_rom() {
             *)
                 if [ "$pilihan" -ge 1 ] && [ "$pilihan" -le "${#MENU_NAMA[@]}" ]; then
                     if [ "${MENU_JENIS[pilihan - 1]}" = "tgz" ]; then
-                        ekstrak_rom "${MENU_JALUR[pilihan - 1]}"
+                        # Setelah ekstrak selesai, langsung ke pilihan cara flash
+                        if ekstrak_rom "${MENU_JALUR[pilihan - 1]}"; then
+                            pilih_cara_flash "$EKSTRAK_HASIL"
+                        fi
                     else
-                        MENU_PESAN="${ABU_TEKS}Langkah flash untuk pilihan ini belum dibuat.${RESET}"
+                        pilih_cara_flash "${MENU_JALUR[pilihan - 1]}"
                     fi
                 else
                     MENU_PESAN="${MERAH}Nomor itu tidak ada di daftar.${RESET}"
