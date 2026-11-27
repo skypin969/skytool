@@ -148,6 +148,18 @@ jalankan_langkah() {
     fi
 }
 
+# Mengulang perintah sampai 3 kali kalau gagal (mirror Termux kadang sedang sinkronisasi)
+ulangi() {
+    local n
+    for n in 1 2 3; do
+        if "$@"; then
+            return 0
+        fi
+        jeda 8
+    done
+    return 1
+}
+
 cek_arsitektur() {
     local arch
     arch=$(dpkg --print-architecture)
@@ -229,9 +241,9 @@ STATUS[0]="ok"
 # Langkah 2 sampai 7
 jalankan_langkah 1 cek_arsitektur
 jalankan_langkah 2 cek_termux_api
-jalankan_langkah 3 bash -c "yes | apt update"
-jalankan_langkah 4 bash -c "yes | apt upgrade && apt install -y --reinstall coreutils"
-jalankan_langkah 5 bash -c "yes | pkg install python git termux-api libusb"
+jalankan_langkah 3 ulangi bash -c "yes | apt update"
+jalankan_langkah 4 ulangi bash -c "yes | apt upgrade && apt install -y --reinstall coreutils"
+jalankan_langkah 5 ulangi bash -c "yes | pkg install python git termux-api libusb"
 jalankan_langkah 6 pasang_termux_adb
 
 gambar_layar
