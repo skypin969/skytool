@@ -24,6 +24,13 @@ cetak() {
     printf '%s\033[K\n' "$1"
 }
 
+# Logo SKYTOOL: SKY putih, TOOL oranye (huruf pagga, tiga baris)
+cetak_logo() {
+    cetak "${TEBAL}${PUTIH}░█▀▀░█░█░█░█${ORANYE}░▀█▀░█▀█░█▀█░█░░${RESET}"
+    cetak "${TEBAL}${PUTIH}░▀▀█░█▀▄░░█░${ORANYE}░░█░░█░█░█░█░█░░${RESET}"
+    cetak "${TEBAL}${PUTIH}░▀▀▀░▀░▀░░▀░${ORANYE}░░▀░░▀▀▀░▀▀▀░▀▀▀${RESET}"
+}
+
 # Jeda singkat tanpa perintah luar (sleep bisa rusak saat apt upgrade mengganti libpcre2)
 jeda() {
     read -r -t "$1" _ <> <(:) 2>/dev/null || true
@@ -65,9 +72,11 @@ susun_layar() {
     done
 
     cetak ""
-    cetak "${TEBAL}${PUTIH}ＳＫＹ${ORANYE}ＴＯＯＬ${RESET} ${ABU_TEKS}${VERSI}${RESET}"
+    cetak_logo
     cetak ""
-    cetak "${TEBAL}${ORANYE}ＭＥＮＹＩＡＰＫＡＮ　ＴＥＲＭＵＸ${RESET}"
+    cetak "${ABU_TEKS}${VERSI}${RESET}"
+    cetak ""
+    cetak "${TEBAL}${ORANYE}ＭＥＮＹＩＡＰＫＡＮ ＴＥＲＭＵＸ${RESET}"
     cetak ""
     cetak "${PUTIH}[${bar}${PUTIH}]  [  ${ORANYE}${persen}%${PUTIH}  ]  [  ${ORANYE}${selesai}/${TOTAL}${PUTIH}  ]${RESET}"
     cetak ""

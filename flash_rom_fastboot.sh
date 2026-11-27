@@ -28,6 +28,13 @@ cetak() {
     printf '%s\033[K\n' "$1"
 }
 
+# Logo SKYTOOL: SKY putih, TOOL oranye (huruf pagga, tiga baris)
+cetak_logo() {
+    cetak "${TEBAL}${PUTIH}░█▀▀░█░█░█░█${ORANYE}░▀█▀░█▀█░█▀█░█░░${RESET}"
+    cetak "${TEBAL}${PUTIH}░▀▀█░█▀▄░░█░${ORANYE}░░█░░█░█░█░█░█░░${RESET}"
+    cetak "${TEBAL}${PUTIH}░▀▀▀░▀░▀░░▀░${ORANYE}░░▀░░▀▀▀░▀▀▀░▀▀▀${RESET}"
+}
+
 # Satu baris menu: nomor dan nama dengan lebar tetap 27 karakter supaya kurung tutup sejajar
 baris_menu() {
     printf '%s' "${PUTIH}[  ${ORANYE}$1${PUTIH}  ] [  ${ORANYE}$(printf '%-27s' "$2")${PUTIH}  ]${RESET}"
@@ -79,9 +86,11 @@ gambar_menu_rom() {
     local i ada_tgz=0 ada_ekstrak=0
     clear
     cetak ""
-    cetak "${TEBAL}${PUTIH}ＳＫＹ${ORANYE}ＴＯＯＬ${RESET} ${ABU_TEKS}${VERSI}${RESET}"
+    cetak_logo
     cetak ""
-    cetak "${TEBAL}${ORANYE}ＦＬＡＳＨ　ＲＯＭ　ＦＡＳＴＢＯＯＴ　ＴＧＺ${RESET}"
+    cetak "${ABU_TEKS}${VERSI}${RESET}"
+    cetak ""
+    cetak "${TEBAL}${ORANYE}ＦＬＡＳＨ ＲＯＭ ＦＡＳＴＢＯＯＴ ＴＧＺ${RESET}"
     cetak ""
 
     cetak "${ABU_TEKS}[ROM FASTBOOT BELUM DI EKSTRAK]${RESET}"
