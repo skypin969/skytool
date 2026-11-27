@@ -52,18 +52,22 @@ muat_daftar() {
     MENU_JALUR=()
     MENU_JENIS=()
     [ -d "$MENU_DL" ] || return 0
+    # ~/storage/downloads adalah symlink ke /sdcard/Download. find tidak mengikuti symlink
+    # di titik awal, jadi alamat aslinya dipakai supaya isi folder ikut terbaca.
+    local asli
+    asli=$(readlink -f "$MENU_DL") || asli="$MENU_DL"
     while IFS= read -r -d '' jalur; do
         MENU_NAMA+=("$(basename "$jalur")")
         MENU_JALUR+=("$jalur")
         MENU_JENIS+=("tgz")
-    done < <(find "$MENU_DL" -path '*/Android' -prune -o -type f -name '*.tgz' -print0 | sort -z)
+    done < <(find "$asli" -path '*/Android' -prune -o -type f -name '*.tgz' -print0 | sort -z)
     while IFS= read -r -d '' jalur; do
         if cek_folder_rom "$jalur"; then
             MENU_NAMA+=("$(basename "$jalur")")
             MENU_JALUR+=("$jalur")
             MENU_JENIS+=("ekstrak")
         fi
-    done < <(find "$MENU_DL" -path '*/Android' -prune -o -type d -print0 | sort -z)
+    done < <(find "$asli" -path '*/Android' -prune -o -type d -print0 | sort -z)
 }
 
 # Layar menu utama: tiga pilihan dan KELUAR
