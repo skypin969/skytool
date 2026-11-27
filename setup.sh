@@ -67,7 +67,7 @@ gambar_layar() {
     cetak "${PUTIH}SKY${ORANYE}TOOL${RESET}$(printf '%*s' 22 '')${ABU}${VERSI}${RESET}"
     cetak ""
     cetak "$(baris_stripe "MENYIAPKAN TERMUX" 0)${BG_ORANYE}${PUTIH}${SPIN} ${RESET}"
-    cetak "$(baris_stripe "langkah ${selesai} dari ${TOTAL} · ${persen}%" 1)"
+    cetak "$(baris_stripe "langkah ${selesai} dari ${TOTAL} - ${persen}%" 1)"
 
     isi=$(( persen * LEBAR / 100 ))
     bar=""
