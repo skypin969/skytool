@@ -39,6 +39,34 @@ ulangi() {
     return 1
 }
 
+# Baris langkah yang sedang berjalan: [  OK  ] [  nama  ]. Kilatan abu-abu tiga huruf bergerak
+# dari kiri ke kanan lalu mengulang. Kurung tetap putih, tulisan di dalamnya oranye muda.
+baris_kilat() {
+    local label="$1" txt col i k total mulai out
+    local -a huruf=() warna=()
+    local -a segmen=("[  " "$PUTIH" "OK" "$ORANYE_TERANG" "  ] " "$PUTIH" "[  " "$PUTIH" "$label" "$ORANYE_TERANG" "  ]" "$PUTIH")
+    for ((k = 0; k < ${#segmen[@]}; k += 2)); do
+        txt="${segmen[k]}"
+        col="${segmen[k+1]}"
+        for ((i = 0; i < ${#txt}; i++)); do
+            huruf+=("${txt:i:1}")
+            warna+=("$col")
+        done
+    done
+    total=${#huruf[@]}
+    mulai=$(( KILAT % (total + 3) ))
+    out=""
+    for ((i = 0; i < total; i++)); do
+        if [ "$i" -ge $(( mulai - 2 )) ] && [ "$i" -le "$mulai" ]; then
+            col="$ABU_GELAP"
+        else
+            col="${warna[i]}"
+        fi
+        out="${out}${col}${huruf[i]}"
+    done
+    printf '%s%s' "$out" "$RESET"
+}
+
 # Menyusun isi layar di memori. Memakai TOTAL, LABEL, STATUS, dan PESAN dari fungsi pemanggil.
 susun_layar() {
     local selesai=0 persen isi j bar pos
@@ -77,9 +105,9 @@ susun_layar() {
     for ((j = 0; j < TOTAL; j++)); do
         case "${STATUS[$j]}" in
             ok)   cetak "${PUTIH}[  ${ORANYE}OK${PUTIH}  ] [  ${ORANYE}${LABEL[$j]}${PUTIH}  ]${RESET}" ;;
-            run)  cetak "${ORANYE_TERANG}[  ${LABEL[$j]}  ]${RESET}" ;;
-            fail) cetak "${MERAH}[  ${LABEL[$j]}  ]${RESET}" ;;
-            *)    cetak "${ABU_GELAP}[  ${LABEL[$j]}  ]${RESET}" ;;
+            run)  cetak "$(baris_kilat "${LABEL[$j]}")" ;;
+            fail) cetak "${MERAH}[  ] [  ${LABEL[$j]}  ]${RESET}" ;;
+            *)    cetak "${ABU_GELAP}[  ] [  ${LABEL[$j]}  ]${RESET}" ;;
         esac
     done
     if [ -n "$PESAN" ]; then
