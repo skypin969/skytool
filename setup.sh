@@ -9,12 +9,15 @@ VERSI="v9.6.9"
 TOTAL=7
 ESC=$'\033'
 RESET="${ESC}[0m"
-TEBAL="${ESC}[1m"
-ORANYE="${ESC}[38;5;208m"
-ABU="${ESC}[38;5;245m"
-ABU_GELAP="${ESC}[38;5;240m"
-MERAH="${ESC}[38;5;203m"
-HIJAU="${ESC}[38;5;78m"
+# Warna sama dengan mockup (kode warna 24-bit)
+PUTIH="${ESC}[38;2;255;255;255m"
+ORANYE="${ESC}[38;2;255;105;0m"
+ORANYE_TERANG="${ESC}[38;2;255;178;122m"
+ABU_TEKS="${ESC}[38;2;108;112;128m"
+ABU="${ESC}[38;2;95;100;114m"
+ABU_GELAP="${ESC}[38;2;46;50;64m"
+ABU_TRACK="${ESC}[38;2;27;30;38m"
+MERAH="${ESC}[38;2;226;75;74m"
 
 LABEL=("izin penyimpanan" "arsitektur HP" "Termux:API" "apt update" "apt upgrade" "pasang python, git, libusb" "adb & fastboot (termux-adb)")
 STATUS=(pending pending pending pending pending pending pending)
@@ -54,24 +57,24 @@ susun_layar() {
     bar=""
     for ((j = 0; j < 20; j++)); do
         if [ "$j" -lt "$isi" ]; then
-            bar="${bar}#"
+            bar="${bar}${ORANYE}#"
         else
-            bar="${bar}-"
+            bar="${bar}${ABU_TRACK}-"
         fi
     done
 
     cetak ""
-    cetak "${TEBAL}SKYTOOL${RESET} ${ABU}${VERSI}${RESET}"
-    cetak "Menyiapkan Termux"
+    cetak "${PUTIH}SKY${ORANYE}TOOL${RESET} ${ABU_TEKS}${VERSI}${RESET}"
+    cetak "${ORANYE_TERANG}Menyiapkan Termux${RESET}"
     cetak ""
-    cetak "[${bar}] ${persen}%  (${selesai}/${TOTAL})"
+    cetak "[${bar}${RESET}] ${persen}%  (${selesai}/${TOTAL})"
     cetak ""
     for ((j = 0; j < TOTAL; j++)); do
         case "${STATUS[$j]}" in
-            ok)   cetak "  ${HIJAU}[ OK ]${RESET} ${LABEL[$j]}" ;;
-            run)  cetak "  ${ORANYE}[ .. ]${RESET} ${LABEL[$j]}" ;;
-            fail) cetak "  ${MERAH}[ XX ]${RESET} ${LABEL[$j]}" ;;
-            *)    cetak "  ${ABU_GELAP}[    ]${RESET} ${LABEL[$j]}" ;;
+            ok)   cetak "  ${ABU}[ OK ] ${LABEL[$j]}${RESET}" ;;
+            run)  cetak "  ${ORANYE_TERANG}[ .. ] ${LABEL[$j]}${RESET}" ;;
+            fail) cetak "  ${MERAH}[ XX ] ${LABEL[$j]}${RESET}" ;;
+            *)    cetak "  ${ABU_GELAP}[    ] ${LABEL[$j]}${RESET}" ;;
         esac
     done
     if [ -n "$PESAN" ]; then
