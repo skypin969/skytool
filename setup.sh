@@ -17,6 +17,8 @@ ABU_GELAP="${ESC}[38;2;122;128;144m"
 MERAH="${ESC}[38;2;226;75;74m"
 # Nomor gambar layar, dipakai untuk menggerakkan kilatan abu-abu pada bilah progres
 KILAT=0
+# Isi layar terakhir yang sudah ditulis, dipakai untuk menulis ulang baris yang berubah saja
+LAYAR_LAMA=()
 
 cetak() {
     printf '%s\033[K\n' "$1"
@@ -94,10 +96,25 @@ susun_layar() {
 
 # Layar disusun dulu di memori, lalu dicetak sekali sekaligus (supaya tidak berkedip).
 gambar_layar() {
-    local isi
+    local i isi baru_n
+    local -a baru=()
     KILAT=$(( KILAT + 1 ))
     isi=$(susun_layar)
-    printf '\033[H%s' "$isi"
+    mapfile -t baru <<< "$isi"
+    baru_n=${#baru[@]}
+    # Hanya baris yang berubah yang ditulis ulang, supaya layar tidak dikosongkan dan digambar penuh
+    # setiap 0,2 detik (penyebab kedipan)
+    for ((i = 0; i < baru_n; i++)); do
+        if [ "${baru[i]}" != "${LAYAR_LAMA[i]-}" ]; then
+            printf '\033[%d;1H%s' "$(( i + 1 ))" "${baru[i]}"
+        fi
+    done
+    if [ "${#LAYAR_LAMA[@]}" -gt "$baru_n" ]; then
+        printf '\033[%d;1H\033[J' "$(( baru_n + 1 ))"
+    fi
+    LAYAR_LAMA=("${baru[@]}")
+    # Kursor ditaruh di bawah layar, supaya teks lain tercetak di bawah tampilan
+    printf '\033[%d;1H' "$(( baru_n + 1 ))"
 }
 
 # Menjalankan satu langkah di latar belakang sambil layar digambar ulang.
