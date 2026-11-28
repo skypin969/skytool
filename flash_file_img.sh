@@ -255,8 +255,8 @@ fi_flash() {
     fi_menu_setelah_flash "$fb"
 }
 
-# Menu setelah flash berhasil. Pilihan 1 dan 2 me-reboot HP lalu kembali ke menu FLASH FILE IMG
-# (menunggu HP lagi). Pilihan 0 atau Enter kembali ke daftar partisi. Keduanya return 1.
+# Menu setelah flash berhasil. Pilihan 1 dan 2 me-reboot HP lalu kembali ke layar awal FLASH FILE IMG
+# (return 2). Pilihan 0 atau Enter kembali ke daftar partisi (return 1).
 fi_menu_setelah_flash() {
     local fb="$1" pil
     cetak ""
@@ -269,8 +269,8 @@ fi_menu_setelah_flash() {
         printf '%s' "${PUTIH}$(t "Pilih nomor, lalu Enter: " "Choose a number, then Enter: ")${RESET}"
         read -r pil || return 1
         case "$pil" in
-            1) "$fb" reboot >> "$FI_LOG" 2>&1; return 1 ;;
-            2) "$fb" reboot recovery >> "$FI_LOG" 2>&1; return 1 ;;
+            1) "$fb" reboot >> "$FI_LOG" 2>&1; return 2 ;;
+            2) "$fb" reboot recovery >> "$FI_LOG" 2>&1; return 2 ;;
             0|"") return 1 ;;
             *) cetak "${MERAH}$(t "Pilihan itu tidak ada. Ketik 1, 2, atau 0." "That choice does not exist. Type 1, 2, or 0.")${RESET}" ;;
         esac
@@ -316,24 +316,29 @@ buka_flash_img() {
         read -r _ || true
         return 0
     fi
-    fi_menu_awal "$fb" || return 0
-    fi_tunggu_slot "$fb"
-    FI_DAFTAR_PARTISI=$(fi_baca_partisi "$fb")
     while true; do
-        fi_gambar_partisi
-        read -r pilihan || return 0
-        FI_PESAN=""
-        case "$pilihan" in
-            ""|0) return 0 ;;
-        esac
-        if ! fi_ubah_pilihan "$pilihan"; then
-            [ -z "$FI_PESAN" ] && FI_PESAN="${MERAH}$(t "Pilihan itu tidak ada. Contoh: 1, 1a, 1b, atau 5super." "That choice does not exist. Examples: 1, 1a, 1b, or 5super.")${RESET}"
-            continue
-        fi
-        if fi_pilih_file "$FI_TARGET"; then
-            fi_flash "$fb" "$FI_TARGET" "$FI_PATH" "$FI_FILE"
-            fi_tunggu_slot "$fb"
-        fi
+        # Layar awal: 1 cek fastboot, 0 kembali ke menu utama
+        fi_menu_awal "$fb" || return 0
+        fi_tunggu_slot "$fb"
+        FI_DAFTAR_PARTISI=$(fi_baca_partisi "$fb")
+        # Daftar partisi. Setelah reboot dari layar hasil flash, kembali ke layar awal (break).
+        while true; do
+            fi_gambar_partisi
+            read -r pilihan || return 0
+            FI_PESAN=""
+            case "$pilihan" in
+                ""|0) return 0 ;;
+            esac
+            if ! fi_ubah_pilihan "$pilihan"; then
+                [ -z "$FI_PESAN" ] && FI_PESAN="${MERAH}$(t "Pilihan itu tidak ada. Contoh: 1, 1a, 1b, atau 5super." "That choice does not exist. Examples: 1, 1a, 1b, or 5super.")${RESET}"
+                continue
+            fi
+            if fi_pilih_file "$FI_TARGET"; then
+                fi_flash "$fb" "$FI_TARGET" "$FI_PATH" "$FI_FILE"
+                [ $? -eq 2 ] && break
+                fi_tunggu_slot "$fb"
+            fi
+        done
     done
 }
 
