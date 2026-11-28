@@ -289,20 +289,16 @@ fi_menu_setelah_flash() {
 # Layar pertama FLASH FILE IMG: 1 untuk cek fastboot, 0 untuk kembali ke menu utama.
 # Return 0 kalau 1 dipilih, 1 kalau kembali.
 fi_menu_awal() {
-    local fb="$1" pil keluar teks
+    local pil teks
+    # Layar ini tidak memanggil fastboot. Pengecekan HP hanya dilakukan setelah pilihan 1.
     fi_judul
     teks=$(t "Cek fastboot" "Check fastboot")
     cetak "${PUTIH}[  ${ORANYE}1${PUTIH}  ] [ ${ORANYE}${teks}${PUTIH} ]${RESET}"
     cetak "${ABU_GELAP}[  0  ] [ $(t "Kembali" "Back") ]${RESET}"
     cetak ""
-    # Cek apakah HP sudah terdeteksi dalam mode fastboot. Kalau belum, tampilkan petunjuk abu-abu.
-    keluar=$(timeout 5 "$fb" devices 2>&1)
-    if ! grep -qP '\bfastboot\s*$' <<<"$keluar"; then
-        cetak "${ABU_GELAP}$(t "Fastboot belum terdeteksi." "Fastboot not detected yet.")${RESET}"
-        cetak "${ABU_GELAP}$(t "Sambungkan HP dalam mode fastboot," "Connect the phone in fastboot mode,")${RESET}"
-        cetak "${ABU_GELAP}$(t "lalu ketik 1." "then type 1.")${RESET}"
-        cetak ""
-    fi
+    cetak "${ABU_GELAP}$(t "Sambungkan HP dalam mode fastboot," "Connect the phone in fastboot mode,")${RESET}"
+    cetak "${ABU_GELAP}$(t "lalu ketik 1." "then type 1.")${RESET}"
+    cetak ""
     while true; do
         printf '%s' "${PUTIH}$(t "Pilih nomor, lalu Enter: " "Choose a number, then Enter: ")${RESET}"
         read -r pil || return 1
