@@ -105,10 +105,10 @@ fi_baris() {
     local warna="$1" nomor="$2" nama="$3"
     # Baris abu-abu (kembali) seluruhnya abu-abu dengan satu spasi di kiri dan kanan tulisannya
     if [ "$warna" = "$ABU_GELAP" ]; then
-        cetak "${ABU_GELAP}[ $(printf '%2s' "$nomor") ] [ ${nama} ]${RESET}"
+        cetak "${ABU_GELAP}[ ${nomor} ] [ ${nama} ]${RESET}"
         return
     fi
-    cetak "${PUTIH}[ ${warna}$(printf '%2s' "$nomor")${PUTIH} ] [ ${warna}$(printf '%-11s' "$nama")${PUTIH} ]${RESET}"
+    cetak "${PUTIH}[ ${warna}${nomor}${PUTIH} ] [ ${warna}$(printf '%-11s' "$nama")${PUTIH} ]${RESET}"
 }
 
 # Baris pilihan dengan format yang sama untuk semua nomor: kurung kiri dan kanan sejajar.
