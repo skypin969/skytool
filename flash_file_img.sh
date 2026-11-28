@@ -13,6 +13,7 @@ ABU_TEKS="${ESC}[38;2;170;176;190m"
 ABU_GELAP="${ESC}[38;2;122;128;144m"
 MERAH="${ESC}[38;2;226;75;74m"
 HIJAU_REDUP="${ESC}[38;2;111;176;124m"
+KUNING_REDUP="${ESC}[38;2;201;169;68m"
 # Folder tempat file .img dicari, dan log hasil flash (tidak ditampilkan di layar)
 FI_DL="$HOME/storage/shared/Download"
 FI_LOG="$HOME/skytool_flash_img.log"
@@ -179,9 +180,9 @@ fi_pilih_file() {
     local target="$1" nama f
     local -a daftar=()
     fi_judul
-    cetak "${ABU_TEKS}$(t "Partisi dipilih: " "Partition selected: ")${PUTIH}${target}${RESET}"
+    cetak "${PUTIH}[ ${ORANYE}$(t "Partisi Dipilih" "Partition Selected")${PUTIH} ] : ${target}${RESET}"
     cetak ""
-    cetak "${ABU_TEKS}Folder: ${PUTIH}Download${RESET}"
+    cetak "${PUTIH}[ ${ORANYE}Folder${PUTIH} ] : Download${RESET}"
     cetak ""
     if [ ! -d "$FI_DL" ]; then
         cetak "${MERAH}$(t "Folder Download belum bisa dibaca. Jalankan termux-setup-storage dulu." "Download folder cannot be read yet. Run termux-setup-storage first.")${RESET}"
@@ -192,9 +193,12 @@ fi_pilih_file() {
         if [ "${#daftar[@]}" -eq 0 ]; then
             cetak "${ABU_GELAP}$(t "(tidak ada file .img di folder Download)" "(no .img file in Download folder)")${RESET}"
         else
-            cetak "${ABU_TEKS}$(t "File .img yang ada:" "Available .img files:")${RESET}"
-            for f in "${daftar[@]}"; do
-                cetak "${PUTIH}  ${f}${RESET}"
+            cetak "${PUTIH}[ ${ORANYE}$(t "File img yang ada" "Available img files")${PUTIH} ] :${RESET}"
+            cetak ""
+            for i in "${!daftar[@]}"; do
+                cetak "${KUNING_REDUP}  ${daftar[$i]}${RESET}"
+                # Satu baris kosong di antara setiap file
+                [ "$i" -lt $(( ${#daftar[@]} - 1 )) ] && cetak ""
             done
         fi
     fi
