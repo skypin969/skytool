@@ -60,9 +60,9 @@ fi_judul() {
     cetak "${TEBAL}${ORANYE}ＰＡＲＴＩＳＩ ＦＩＬＥ ＩＭＧ${RESET}"
     cetak ""
     if [ -n "$FI_SLOT" ]; then
-        cetak "${ABU_TEKS}$(t "Slot aktif: " "Active slot: ")${PUTIH}${FI_SLOT}${RESET}"
+        cetak "${ORANYE}$(t "Slot aktif: " "Active slot: ")${PUTIH}${FI_SLOT}${RESET}"
     else
-        cetak "${ABU_GELAP}$(t "Slot aktif: tidak terbaca" "Active slot: not readable")${RESET}"
+        cetak "${ORANYE}$(t "Slot aktif: " "Active slot: ")${ABU_GELAP}$(t "tidak terbaca" "not readable")${RESET}"
     fi
     cetak ""
 }
@@ -283,8 +283,8 @@ fi_menu_awal() {
     local fb="$1" pil keluar teks
     fi_judul
     teks=$(t "Cek fastboot" "Check fastboot")
-    cetak "${PUTIH}[  ${ORANYE}1${PUTIH}  ] [ ${ORANYE}$(printf '%-14s' "$teks")${PUTIH} ]${RESET}"
-    cetak "${ABU_GELAP}$(printf '[  %s  ] [ %-14s ]' 0 "$(t "kembali" "back")")${RESET}"
+    cetak "${PUTIH}[  ${ORANYE}1${PUTIH}  ] [ ${ORANYE}${teks}${PUTIH} ]${RESET}"
+    cetak "${ABU_GELAP}[  0  ] [ $(t "kembali" "back") ]${RESET}"
     cetak ""
     # Cek apakah HP sudah terdeteksi dalam mode fastboot. Kalau belum, tampilkan petunjuk abu-abu.
     keluar=$(timeout 5 "$fb" devices 2>&1)
