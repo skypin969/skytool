@@ -106,6 +106,13 @@ fi_baris() {
     cetak "${warna}$(printf '[ %2s ] [ %-16s ]' "$nomor" "$nama")${RESET}"
 }
 
+# Baris pilihan dengan format yang sama untuk semua nomor: kurung kiri dan kanan sejajar.
+# Kurung selalu putih; warna angka dan teks diatur lewat argumen.
+fi_pilihan_lurus() {
+    local nomor="$1" nama="$2" warna_teks="$3"
+    cetak "${PUTIH}[  ${ORANYE}${nomor}${PUTIH}  ] [ ${warna_teks}$(printf '%-16s' "$nama")${PUTIH} ]${RESET}"
+}
+
 # Daftar partisi, lalu pilihan dibaca. Hasil: target (misalnya boot atau boot_b) lewat FI_TARGET
 fi_gambar_partisi() {
     fi_judul
@@ -253,10 +260,10 @@ fi_flash() {
 fi_menu_setelah_flash() {
     local fb="$1" pil
     cetak ""
-    fi_baris "$PUTIH" 1 "$(t "Reboot perangkat" "Reboot device")"
-    fi_baris "$PUTIH" 2 "$(t "Reboot recovery" "Reboot recovery")"
+    fi_pilihan_lurus 1 "$(t "Reboot perangkat" "Reboot device")" "$ORANYE"
+    fi_pilihan_lurus 2 "$(t "Reboot recovery" "Reboot recovery")" "$ORANYE"
     cetak ""
-    fi_baris "$ABU_GELAP" 0 "$(t "kembali" "back")"
+    cetak "${ABU_GELAP}[  0  ] [ $(t "kembali" "back") ]${RESET}"
     cetak ""
     while true; do
         printf '%s' "${PUTIH}$(t "Pilih nomor, lalu Enter: " "Choose a number, then Enter: ")${RESET}"
