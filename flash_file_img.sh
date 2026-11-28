@@ -248,8 +248,8 @@ fi_flash() {
     fi_menu_setelah_flash "$fb"
 }
 
-# Menu setelah flash berhasil. Return 0 kalau perangkat di-reboot (keluar ke menu utama),
-# 1 kalau kembali ke daftar partisi (pilihan 0 atau Enter).
+# Menu setelah flash berhasil. Pilihan 1 dan 2 me-reboot HP lalu kembali ke menu FLASH FILE IMG
+# (menunggu HP lagi). Pilihan 0 atau Enter kembali ke daftar partisi. Keduanya return 1.
 fi_menu_setelah_flash() {
     local fb="$1" pil
     cetak ""
@@ -262,10 +262,38 @@ fi_menu_setelah_flash() {
         printf '%s' "${PUTIH}$(t "Pilih nomor, lalu Enter: " "Choose a number, then Enter: ")${RESET}"
         read -r pil || return 1
         case "$pil" in
-            1) "$fb" reboot >> "$FI_LOG" 2>&1; return 0 ;;
-            2) "$fb" reboot recovery >> "$FI_LOG" 2>&1; return 0 ;;
+            1) "$fb" reboot >> "$FI_LOG" 2>&1; return 1 ;;
+            2) "$fb" reboot recovery >> "$FI_LOG" 2>&1; return 1 ;;
             0|"") return 1 ;;
             *) cetak "${MERAH}$(t "Pilihan itu tidak ada. Ketik 1, 2, atau 0." "That choice does not exist. Type 1, 2, or 0.")${RESET}" ;;
+        esac
+    done
+}
+
+# Layar pertama FLASH FILE IMG: 1 untuk cek fastboot, 0 untuk kembali ke menu utama.
+# Return 0 kalau 1 dipilih, 1 kalau kembali.
+fi_menu_awal() {
+    local fb="$1" pil keluar teks
+    fi_judul
+    teks=$(t "Cek fastboot" "Check fastboot")
+    cetak "${PUTIH}[  ${ORANYE}1${PUTIH}  ] [ ${ORANYE}$(printf '%-14s' "$teks")${PUTIH} ]${RESET}"
+    cetak "${ABU_GELAP}$(printf '[  %s  ] [ %-14s ]' 0 "$(t "kembali" "back")")${RESET}"
+    cetak ""
+    # Cek apakah HP sudah terdeteksi dalam mode fastboot. Kalau belum, tampilkan petunjuk abu-abu.
+    keluar=$(timeout 5 "$fb" devices 2>&1)
+    if ! grep -qP '\bfastboot\s*$' <<<"$keluar"; then
+        cetak "${ABU_GELAP}$(t "Fastboot belum terdeteksi." "Fastboot not detected yet.")${RESET}"
+        cetak "${ABU_GELAP}$(t "Sambungkan HP dalam mode fastboot," "Connect the phone in fastboot mode,")${RESET}"
+        cetak "${ABU_GELAP}$(t "lalu ketik 1." "then type 1.")${RESET}"
+        cetak ""
+    fi
+    while true; do
+        printf '%s' "${PUTIH}$(t "Pilih nomor, lalu Enter: " "Choose a number, then Enter: ")${RESET}"
+        read -r pil || return 1
+        case "$pil" in
+            1) return 0 ;;
+            0|"") return 1 ;;
+            *) cetak "${MERAH}$(t "Pilihan itu tidak ada. Ketik 1 atau 0." "That choice does not exist. Type 1 or 0.")${RESET}" ;;
         esac
     done
 }
@@ -281,6 +309,7 @@ buka_flash_img() {
         read -r _ || true
         return 0
     fi
+    fi_menu_awal "$fb" || return 0
     fi_tunggu_slot "$fb"
     FI_DAFTAR_PARTISI=$(fi_baca_partisi "$fb")
     while true; do
@@ -295,8 +324,7 @@ buka_flash_img() {
             continue
         fi
         if fi_pilih_file "$FI_TARGET"; then
-            # Setelah reboot, keluar ke menu utama. Kalau tidak, kembali ke daftar partisi.
-            fi_flash "$fb" "$FI_TARGET" "$FI_PATH" "$FI_FILE" && return 0
+            fi_flash "$fb" "$FI_TARGET" "$FI_PATH" "$FI_FILE"
             fi_tunggu_slot "$fb"
         fi
     done
