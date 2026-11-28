@@ -298,6 +298,12 @@ judul_proses() {
     local folder="$1" nama="$2"
     clear
     cetak ""
+    _fl_header "$folder" "$nama"
+}
+
+# Isi header layar proses (tanpa baris kosong paling atas, supaya seluruh layar muat di HP)
+_fl_header() {
+    local folder="$1" nama="$2"
     cetak_logo
     cetak ""
     cetak "${ABU_TEKS}${VERSI}${RESET}"
@@ -502,8 +508,8 @@ _fl_baris() {
     printf '%s' "${PUTIH}[ ${warna}${tanda}${PUTIH} ] [${warna}$2${PUTIH}]${RESET}"
 }
 
-# Menggambar layar flashing. Gaya dan urutan sama dengan layar ekstrak (judul, bar 10 kotak, dua baris info).
-_fl_gambar() {
+# Menyusun isi layar flashing (header + bar + status). Dibuat sebagai satu teks utuh, lalu digambar sekali.
+_fl_isi() {
     local j i bar="" persen=0 isi=0 dn=0 nF=0 dF=0 fc=-1 lo hi k sisa=0 detik extra
     _fl_fidx=()
     local nE=0 dE=0 nS=0 dS=0
@@ -541,9 +547,7 @@ _fl_gambar() {
         sisa=$(( detik * (_fl_n - dn) / dn ))
     fi
 
-    # Kembali ke posisi setelah header, lalu timpa bagian bawah (tanpa menghapus layar: tidak berkedip)
-    printf '%s8' "$ESC"
-    printf '\033[J'
+    _fl_header "$_fl_folder" "$_fl_pilihan"
     cetak "${PUTIH}[${bar}${PUTIH}]  [  ${ORANYE}${persen}%${PUTIH}  ]${RESET}"
     cetak "${PUTIH}[  ${ORANYE}$(t "tahap ${dn} dari ${_fl_n}" "step ${dn} of ${_fl_n}")${PUTIH}  ]  [  ${ORANYE}$(t "sisa ± ${sisa} detik" "left ± ${sisa} sec")${PUTIH}  ]${RESET}"
     cetak ""
@@ -566,8 +570,8 @@ _fl_gambar() {
     cetak "${KUNING_REDUP}$(t "[HAPUS DATA] ${dE}/${nE}" "[ERASE] ${dE}/${nE}")${RESET}"
     cetak ""
     cetak "${KUNING_REDUP}$(t "[FLASH IMAGE] ${dF}/${nF}" "[FLASH IMAGES] ${dF}/${nF}")${RESET}"
-    lo=$((fc - 2)); [ "$lo" -lt 0 ] && lo=0
-    hi=$((fc + 2)); [ "$hi" -ge "$nF" ] && hi=$((nF - 1))
+    lo=$((fc - 1)); [ "$lo" -lt 0 ] && lo=0
+    hi=$((fc + 1)); [ "$hi" -ge "$nF" ] && hi=$((nF - 1))
     for ((j = lo; j <= hi; j++)); do
         k=${_fl_fidx[j]}
         cetak "  $(_fl_baris "${_fl_stat[k]}" "${_fl_nama[k]}")"
@@ -576,7 +580,13 @@ _fl_gambar() {
     cetak "${KUNING_REDUP}$(t "[SELESAI] ${dS}/${nS}" "[FINISH] ${dS}/${nS}")${RESET}"
     cetak ""
     cetak "${ABU_GELAP}$(t "Log: ~/skytool_flash.log" "Log: ~/skytool_flash.log")${RESET}"
-    printf '\033[J'
+}
+
+# Menggambar ulang dari pojok kiri atas dalam satu kali tulis: tidak menumpuk dan tidak berkedip
+_fl_gambar() {
+    local buf
+    buf=$(_fl_isi)
+    printf '\033[H%s\033[J' "$buf"
 }
 
 # Menjalankan script flash dan menampilkannya. Kode keluar script tetap dikembalikan apa adanya.
@@ -593,9 +603,11 @@ tampil_flash() {
         _fl_n=$((_fl_n + 1))
     done < <(_fl_parse "$skrip")
     _fl_cur=""; _fl_curj=""; _fl_chunk=""; _fl_gagal=""; _fl_selesai=0
-    # Header sama dengan layar proses di atas (logo, versi, PROSES FLASH ROM); posisi setelahnya disimpan
-    judul_proses "$folder" "$pilihan"
-    printf '%s7' "$ESC"
+    _fl_folder="$folder"; _fl_pilihan="$pilihan"
+    # Layar penuh terpisah (alternate screen): hasil gambar tidak ikut terdorong ke atas saat layar penuh
+    printf '\033[?1049h\033[2J'
+    # Kalau Ctrl+C ditekan, keluar dari layar penuh agar terminal tidak tertinggal di mode itu
+    trap 'printf "\033[?1049l"' INT
     _fl_gambar
     while IFS= read -r line || [ -n "$line" ]; do
         line=${line%$'\r'}
@@ -621,7 +633,12 @@ tampil_flash() {
     elif [ -z "$_fl_gagal" ]; then
         _fl_gagal="exit code $rc"
     fi
-    _fl_gambar
+    # Keluar dari layar penuh, lalu tulis hasil akhir ke layar biasa agar tetap terlihat
+    trap - INT
+    local akhir
+    akhir=$(_fl_isi)
+    printf '\033[?1049l'
+    printf '%s\n' "$akhir"
     return "$rc"
 }
 
