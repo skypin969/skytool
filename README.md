@@ -54,4 +54,73 @@ source <(curl -sS "https://raw.githubusercontent.com/skypin969/skytool/main/menu
 
 The main menu `menu.sh` opens other scripts from the repo based on the number you choose:
 - `1` FLASH ROM FASTBOOT TGZ opens `flash_rom_fastboot.sh`. This script lists `.tgz` files and ROM folders in the phone storage. A ROM folder is recognized by its contents (it has an `images` folder and a `flash_all*.sh` script), so it is still found even if the name was changed. Choose a `.tgz` to extract it first, then pick a flash method. Flashing runs like MiTool: it waits for the device, then runs the script and shows the result.
-- `2` FLASH FILE IMG and `3` ADB SIDELOAD are not built yet.
+- `2` FLASH FILE IMG opens `flash_file_img.sh`. It flashes one `.img` file to one partition. See the section below.
+- `3` ADB SIDELOAD is not built yet.
+
+---
+
+## FLASH FILE IMG
+
+Pilih `2` di menu utama. Layar pertama menampilkan:
+
+```
+[  1  ] [ Cek fastboot ]
+[  0  ] [ Kembali ]
+
+Sambungkan HP dalam mode fastboot,
+lalu ketik 1.
+
+Pilih nomor, lalu Enter:
+```
+
+Fastboot baru dicek setelah kamu memilih `1`. Pilihan `0` kembali ke menu utama.
+
+Setelah HP terdeteksi, layar memilih partisi:
+
+```
+[  1  ] [ boot ]
+[  2  ] [ init_boot ]
+[  3  ] [ vendor_boot ]
+[  4  ] [ recovery ]
+[  5  ] [ lainnya ]
+
+[  0  ] [ Kembali ]
+
+Tambah a atau b untuk slot tertentu, misalnya 1b
+Partisi lain: ketik 5 lalu namanya, misalnya 5super
+```
+
+- Tambah `a` atau `b` untuk memilih slot, misalnya `1b` atau `5super_a`.
+- Akhiran `a` atau `b` pada pilihan `5` hanya bisa dipakai kalau partisi itu punya dua slot di HP. Kalau tidak, layar menampilkan: `Partisi <nama> tidak punya slot a/b. Ketik 5<nama> saja.`
+- `0` Kembali: kembali ke layar awal.
+
+Setelah partisi dipilih, layar memilih file:
+
+```
+[ Partisi Dipilih ] : boot
+[ Folder ] : Download
+
+[ File img yang ada ] :
+  (daftar file .img di folder Download)
+
+[  0  ] [ Kembali ]
+
+Ketik nama file, lalu Enter:
+```
+
+Ketik nama file tanpa folder, lalu Enter. Perintah fastboot dijalankan dan outputnya tidak ditampilkan di layar.
+
+Layar hasil menampilkan `[ Partisi Dipilih ]`, `[ File Dipilih ]`, status `[ OK ]` atau `[ !! ] gagal (kode N)`, dan `[ Flash file Slot ]` berisi slot tujuan. Di bagian bawah tertulis `Log: ~/skytool_flash_img.log`. Log hanya mencatat flash dan reboot.
+
+Menu setelah berhasil:
+
+```
+[  1  ] [ Reboot perangkat ]
+[  2  ] [ Reboot recovery ]
+[  0  ] [ Kembali ]
+```
+
+- `1` Reboot perangkat: menjalankan `fastboot reboot`.
+- `2` Reboot recovery: menjalankan `fastboot reboot recovery`.
+- Keduanya kembali ke layar `Cek fastboot`.
+- `0` Kembali: kembali ke daftar partisi.
