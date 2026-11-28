@@ -61,9 +61,9 @@ fi_judul() {
     cetak "${TEBAL}${ORANYE}ＰＡＲＴＩＳＩ ＦＩＬＥ ＩＭＧ${RESET}"
     cetak ""
     if [ -n "$FI_SLOT" ]; then
-        cetak "${ORANYE}$(t "Slot aktif: " "Active slot: ")${PUTIH}${FI_SLOT}${RESET}"
+        cetak "${ORANYE}$(t "Slot aktif : " "Active slot : ")${PUTIH}${FI_SLOT}${RESET}"
     else
-        cetak "${ORANYE}$(t "Slot aktif: " "Active slot: ")${ABU_GELAP}$(t "tidak terbaca" "not readable")${RESET}"
+        cetak "${ORANYE}$(t "Slot aktif : " "Active slot : ")${ABU_GELAP}$(t "tidak terbaca" "not readable")${RESET}"
     fi
     cetak ""
 }
@@ -230,10 +230,8 @@ fi_flash() {
     } >> "$FI_LOG"
     FI_SLOT_BARU=$(fi_baca_slot "$fb")
     fi_judul
-    cetak "${TEBAL}${ORANYE}$(t "HASIL FLASH" "FLASH RESULT")${RESET}"
-    cetak ""
-    cetak "${ABU_TEKS}$(t "Partisi : " "Partition: ")${PUTIH}${target}${RESET}"
-    cetak "${ABU_TEKS}File    : ${PUTIH}${nama}${RESET}"
+    cetak "${PUTIH}[ ${ORANYE}$(t "Partisi Dipilih" "Partition Selected")${PUTIH} ] : ${target}${RESET}"
+    cetak "${PUTIH}[ ${ORANYE}$(t "File Dipilih" "Selected File")${PUTIH} ] : ${nama}${RESET}"
     cetak ""
     if [ "$rc" -eq 0 ]; then
         cetak "${HIJAU_REDUP}[ OK ] $(t "berhasil di-flash" "flashed successfully")${RESET}"
@@ -254,7 +252,7 @@ fi_flash() {
     else
         slot_flash="${FI_SLOT:-?}"
     fi
-    cetak "${ABU_TEKS}Flash file slot: ${PUTIH}${slot_flash}${RESET}"
+    cetak "${PUTIH}[ ${ORANYE}Flash file Slot${PUTIH} ] : ${slot_flash}${RESET}"
     cetak ""
     cetak "${ABU_GELAP}Log: ~/skytool_flash_img.log${RESET}"
     cetak ""
