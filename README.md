@@ -53,9 +53,23 @@ source <(curl -sS "https://raw.githubusercontent.com/skypin969/skytool/main/menu
 ```
 
 The main menu `menu.sh` opens other scripts from the repo based on the number you choose:
-- `1` FLASH ROM FASTBOOT TGZ opens `flash_rom_fastboot.sh`. This script lists `.tgz` files and ROM folders in the phone storage. A ROM folder is recognized by its contents (it has an `images` folder and a `flash_all*.sh` script), so it is still found even if the name was changed. Choose a `.tgz` to extract it first, then pick a flash method. Flashing runs like MiTool: it waits for the device, then runs the script and shows the result.
+- `1` FLASH ROM FASTBOOT TGZ opens `flash_rom_fastboot.sh`. See the section below.
 - `2` FLASH FILE IMG opens `flash_file_img.sh`. It flashes one `.img` file to one partition. See the section below.
 - `3` ADB SIDELOAD is not built yet.
+
+---
+
+## FLASH ROM FASTBOOT TGZ
+
+Pilih `1` di menu utama. Layar daftar menampilkan dua bagian:
+
+- `[ROM FASTBOOT BELUM DI EKSTRAK]`: file `.tgz`. Pilih nomornya untuk mengekstrak.
+- `[ROM FASTBOOT SUDAH DI EKSTRAK]`: folder ROM yang siap di-flash.
+
+1. Pilih ROM dengan nomor, lalu Enter.
+2. `Pilih cara flash:` berisi `[ 1 ] [ Flash all ]`, `[ 2 ] [ Flash all + lock bootloader ]`, atau `[ 3 ] [ Flash tanpa hapus data ]`. Pilihan yang tersedia tergantung isi folder ROM.
+3. Proses menampilkan `[HAPUS DATA]`, `[FLASH IMAGE]`, dan `[SELESAI]`, dengan log di `~/skytool_flash.log`.
+4. `[ 0 ] [ Kembali ]`: kembali ke menu utama.
 
 ---
 
