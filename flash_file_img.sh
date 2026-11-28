@@ -179,6 +179,8 @@ fi_pilih_file() {
     local target="$1" nama f
     local -a daftar=()
     fi_judul
+    cetak "${ABU_TEKS}$(t "Partisi dipilih: " "Partition selected: ")${PUTIH}${target}${RESET}"
+    cetak ""
     cetak "${ABU_TEKS}Folder: ${PUTIH}Download${RESET}"
     cetak ""
     if [ ! -d "$FI_DL" ]; then
