@@ -61,66 +61,10 @@ The main menu `menu.sh` opens other scripts from the repo based on the number yo
 
 ## FLASH FILE IMG
 
-Pilih `2` di menu utama. Layar pertama menampilkan:
+Pilih `2` di menu utama.
 
-```
-[  1  ] [ Cek fastboot ]
-[  0  ] [ Kembali ]
-
-Sambungkan HP dalam mode fastboot,
-lalu ketik 1.
-
-Pilih nomor, lalu Enter:
-```
-
-Fastboot baru dicek setelah kamu memilih `1`. Pilihan `0` kembali ke menu utama.
-
-Setelah HP terdeteksi, layar memilih partisi:
-
-```
-[  1  ] [ boot ]
-[  2  ] [ init_boot ]
-[  3  ] [ vendor_boot ]
-[  4  ] [ recovery ]
-[  5  ] [ lainnya ]
-
-[  0  ] [ Kembali ]
-
-Tambah a atau b untuk slot tertentu, misalnya 1b
-Partisi lain: ketik 5 lalu namanya, misalnya 5super
-```
-
-- Tambah `a` atau `b` untuk memilih slot, misalnya `1b` atau `5super_a`.
-- Akhiran `a` atau `b` pada pilihan `5` hanya bisa dipakai kalau partisi itu punya dua slot di HP. Kalau tidak, layar menampilkan: `Partisi <nama> tidak punya slot a/b. Ketik 5<nama> saja.`
-- `0` Kembali: kembali ke layar awal.
-
-Setelah partisi dipilih, layar memilih file:
-
-```
-[ Partisi Dipilih ] : boot
-[ Folder ] : Download
-
-[ File img yang ada ] :
-  (daftar file .img di folder Download)
-
-[  0  ] [ Kembali ]
-
-Ketik nama file, lalu Enter:
-```
-
-Ketik nama file tanpa folder, lalu Enter. Perintah fastboot dijalankan dan outputnya tidak ditampilkan di layar.
-
-Layar hasil menampilkan `[ Partisi Dipilih ]`, `[ File Dipilih ]`, status `[ OK ]` atau `[ !! ] gagal (kode N)`, dan `[ Flash file Slot ]` berisi slot tujuan. Di bagian bawah tertulis `Log: ~/skytool_flash_img.log`. Log hanya mencatat flash dan reboot.
-
-Menu setelah berhasil:
-
-```
-[  1  ] [ Reboot perangkat ]
-[  2  ] [ Reboot recovery ]
-[  0  ] [ Kembali ]
-```
-
-- `1` Reboot perangkat: menjalankan `fastboot reboot`.
-- `2` Reboot recovery: menjalankan `fastboot reboot recovery`.
-- Keduanya kembali ke layar `Cek fastboot`.
-- `0` Kembali: kembali ke daftar partisi.
+1. `[ 1 ] [ Cek fastboot ]`: tekan `1` setelah HP masuk mode fastboot.
+2. `[ 1 ] [ boot ]` ... `[ 5 ] [ lainnya ]`: pilih partisi. Tambah `a` atau `b` untuk slot, misalnya `1b`, atau ketik `5super` untuk partisi lain.
+3. `[ Partisi Dipilih ]`, `[ Folder ] : Download`, dan `[ File img yang ada ]`: ketik nama file, lalu Enter.
+4. Hasil muncul dengan `[ OK ]` atau `[ !! ]`, lalu log di `~/skytool_flash_img.log`.
+5. `[ 1 ] [ Reboot perangkat ]` atau `[ 2 ] [ Reboot recovery ]`, lalu `[ 0 ] [ Kembali ]`.
