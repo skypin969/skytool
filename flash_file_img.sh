@@ -103,7 +103,7 @@ fi_tunggu_slot() {
 # Satu baris menu dengan lebar tetap, supaya tanda ] di setiap baris sejajar
 fi_baris() {
     local warna="$1" nomor="$2" nama="$3"
-    cetak "${warna}$(printf '[ %2s ] [ %-12s ]' "$nomor" "$nama")${RESET}"
+    cetak "${warna}$(printf '[ %2s ] [ %-16s ]' "$nomor" "$nama")${RESET}"
 }
 
 # Daftar partisi, lalu pilihan dibaca. Hasil: target (misalnya boot atau boot_b) lewat FI_TARGET
@@ -229,12 +229,45 @@ fi_flash() {
     if [ -n "$FI_SLOT_BARU" ]; then
         FI_SLOT="$FI_SLOT_BARU"
     fi
-    cetak "${ABU_TEKS}$(t "Slot aktif: " "Active slot: ")${PUTIH}${FI_SLOT:-?}${RESET}"
+    # Kalau partisi memakai akhiran _a/_b, slot tujuannya itu; kalau tidak, slot aktif
+    local slot_flash
+    if [[ "$target" == *_a || "$target" == *_b ]]; then
+        slot_flash="${target: -1}"
+    else
+        slot_flash="${FI_SLOT:-?}"
+    fi
+    cetak "${ABU_TEKS}Flash file slot: ${PUTIH}${slot_flash}${RESET}"
     cetak ""
     cetak "${ABU_GELAP}Log: ~/skytool_flash_img.log${RESET}"
     cetak ""
-    printf '%s' "${PUTIH}$(t "Tekan Enter untuk kembali." "Press Enter to go back.")${RESET}"
-    read -r _ || true
+    if [ "$rc" -ne 0 ]; then
+        printf '%s' "${PUTIH}$(t "Tekan Enter untuk kembali." "Press Enter to go back.")${RESET}"
+        read -r _ || true
+        return 1
+    fi
+    fi_menu_setelah_flash "$fb"
+}
+
+# Menu setelah flash berhasil. Return 0 kalau perangkat di-reboot (keluar ke menu utama),
+# 1 kalau kembali ke daftar partisi (pilihan 0 atau Enter).
+fi_menu_setelah_flash() {
+    local fb="$1" pil
+    cetak ""
+    fi_baris "$PUTIH" 1 "$(t "Reboot perangkat" "Reboot device")"
+    fi_baris "$PUTIH" 2 "$(t "Reboot recovery" "Reboot recovery")"
+    cetak ""
+    fi_baris "$ABU_GELAP" 0 "$(t "kembali" "back")"
+    cetak ""
+    while true; do
+        printf '%s' "${PUTIH}$(t "Pilih nomor, lalu Enter: " "Choose a number, then Enter: ")${RESET}"
+        read -r pil || return 1
+        case "$pil" in
+            1) "$fb" reboot >> "$FI_LOG" 2>&1; return 0 ;;
+            2) "$fb" reboot recovery >> "$FI_LOG" 2>&1; return 0 ;;
+            0|"") return 1 ;;
+            *) cetak "${MERAH}$(t "Pilihan itu tidak ada. Ketik 1, 2, atau 0." "That choice does not exist. Type 1, 2, or 0.")${RESET}" ;;
+        esac
+    done
 }
 
 buka_flash_img() {
@@ -262,7 +295,8 @@ buka_flash_img() {
             continue
         fi
         if fi_pilih_file "$FI_TARGET"; then
-            fi_flash "$fb" "$FI_TARGET" "$FI_PATH" "$FI_FILE"
+            # Setelah reboot, keluar ke menu utama. Kalau tidak, kembali ke daftar partisi.
+            fi_flash "$fb" "$FI_TARGET" "$FI_PATH" "$FI_FILE" && return 0
             fi_tunggu_slot "$fb"
         fi
     done
