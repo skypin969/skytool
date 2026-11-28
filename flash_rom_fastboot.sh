@@ -77,9 +77,34 @@ jeda() {
     read -r -t "$1" _ <> <(:) 2>/dev/null || true
 }
 
-# Satu baris ROM: nomor di kurung, lalu nama ROM di kurung tanpa spasi (contoh: [nama.rom])
+# Satu ROM: nomor di kurung, lalu nama lengkap di kurung. Nama utuh, hanya dipecah setelah tanda "_"
+# dan baris lanjutannya sejajar dengan awal nama. Penutup "]" ada di baris terakhir.
 baris_rom() {
-    printf '%s' "${PUTIH}[  ${ORANYE}$1${PUTIH}  ] ${PUTIH}[${ORANYE}$2${PUTIH}]${RESET}"
+    local nomor="$1" nama="$2" maks=40 cur="" p i n out=""
+    local -a bagian=() baris=()
+    while [[ "$nama" == *_* ]]; do
+        bagian+=("${nama%%_*}_")
+        nama="${nama#*_}"
+    done
+    bagian+=("$nama")
+    for p in "${bagian[@]}"; do
+        if [ -n "$cur" ] && [ $(( ${#cur} + ${#p} )) -gt "$maks" ]; then
+            baris+=("$cur"); cur="$p"
+        else
+            cur="$cur$p"
+        fi
+    done
+    baris+=("$cur")
+    n=${#baris[@]}
+    for ((i = 0; i < n; i++)); do
+        if [ "$i" -eq 0 ]; then
+            out+="${PUTIH}[  ${ORANYE}${nomor}${PUTIH}  ] [${ORANYE}${baris[i]}"
+        else
+            out+=$'\n'"          ${ORANYE}${baris[i]}"
+        fi
+    done
+    out+="${PUTIH}]${RESET}"
+    printf '%s' "$out"
 }
 
 # Sama seperti MiTool (rom.py): folder ROM dikenali dari ISINYA, bukan dari namanya.
@@ -155,7 +180,7 @@ gambar_menu_rom() {
     fi
     cetak ""
 
-    cetak "${ABU_GELAP}[  0  ] [  $(t "kembali" "back")  ]${RESET}"
+    cetak "${ABU_GELAP}[  0  ] [  $(t "Kembali" "Back")  ]${RESET}"
     cetak ""
     if [ -n "$MENU_PESAN" ]; then
         cetak "$MENU_PESAN"
@@ -675,7 +700,7 @@ pilih_cara_flash() {
             cetak "${MERAH}  $(t "(tidak ada skrip flash di folder ini)" "(no flash script in this folder)")${RESET}"
         fi
         cetak ""
-        cetak "${ABU_GELAP}[  0  ] [  $(t "kembali" "back")  ]${RESET}"
+        cetak "${ABU_GELAP}[  0  ] [  $(t "Kembali" "Back")  ]${RESET}"
         cetak ""
         if [ -n "$MENU_PESAN" ]; then
             cetak "$MENU_PESAN"
