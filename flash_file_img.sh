@@ -103,7 +103,12 @@ fi_tunggu_slot() {
 # Satu baris menu dengan lebar tetap, supaya tanda ] di setiap baris sejajar
 fi_baris() {
     local warna="$1" nomor="$2" nama="$3"
-    cetak "${warna}$(printf '[ %2s ] [ %-16s ]' "$nomor" "$nama")${RESET}"
+    # Baris abu-abu (kembali) seluruhnya abu-abu dengan satu spasi di kiri dan kanan tulisannya
+    if [ "$warna" = "$ABU_GELAP" ]; then
+        cetak "${ABU_GELAP}[ $(printf '%2s' "$nomor") ] [ ${nama} ]${RESET}"
+        return
+    fi
+    cetak "${PUTIH}[ ${warna}$(printf '%2s' "$nomor")${PUTIH} ] [ ${warna}$(printf '%-11s' "$nama")${PUTIH} ]${RESET}"
 }
 
 # Baris pilihan dengan format yang sama untuk semua nomor: kurung kiri dan kanan sejajar.
@@ -116,13 +121,13 @@ fi_pilihan_lurus() {
 # Daftar partisi, lalu pilihan dibaca. Hasil: target (misalnya boot atau boot_b) lewat FI_TARGET
 fi_gambar_partisi() {
     fi_judul
-    fi_baris "$PUTIH" 1 boot
-    fi_baris "$PUTIH" 2 init_boot
-    fi_baris "$PUTIH" 3 vendor_boot
-    fi_baris "$PUTIH" 4 recovery
-    fi_baris "$PUTIH" 5 "$(t "lainnya" "other")"
+    fi_baris "$ORANYE" 1 boot
+    fi_baris "$ORANYE" 2 init_boot
+    fi_baris "$ORANYE" 3 vendor_boot
+    fi_baris "$ORANYE" 4 recovery
+    fi_baris "$ORANYE" 5 "$(t "lainnya" "other")"
     cetak ""
-    fi_baris "$ABU_GELAP" 0 "$(t "kembali" "back")"
+    fi_baris "$ABU_GELAP" 0 "$(t "Kembali" "Back")"
     cetak ""
     cetak "${ABU_GELAP}$(t "Tambah a atau b untuk slot tertentu, misalnya 1b" "Add a or b for a specific slot, for example 1b")${RESET}"
     cetak "${ABU_GELAP}$(t "Partisi lain: ketik 5 lalu namanya, misalnya 5super" "Other partition: type 5 then its name, for example 5super")${RESET}"
@@ -192,7 +197,7 @@ fi_pilih_file() {
         fi
     fi
     cetak ""
-    fi_baris "$ABU_GELAP" 0 "$(t "kembali" "back")"
+    fi_baris "$ABU_GELAP" 0 "$(t "Kembali" "Back")"
     cetak ""
     printf '%s' "${PUTIH}$(t "Ketik nama file, lalu Enter: " "Type the file name, then Enter: ")${RESET}"
     read -r nama || return 1
@@ -263,7 +268,7 @@ fi_menu_setelah_flash() {
     fi_pilihan_lurus 1 "$(t "Reboot perangkat" "Reboot device")" "$ORANYE"
     fi_pilihan_lurus 2 "$(t "Reboot recovery" "Reboot recovery")" "$ORANYE"
     cetak ""
-    cetak "${ABU_GELAP}[  0  ] [ $(t "kembali" "back") ]${RESET}"
+    cetak "${ABU_GELAP}[  0  ] [ $(t "Kembali" "Back") ]${RESET}"
     cetak ""
     while true; do
         printf '%s' "${PUTIH}$(t "Pilih nomor, lalu Enter: " "Choose a number, then Enter: ")${RESET}"
@@ -284,7 +289,7 @@ fi_menu_awal() {
     fi_judul
     teks=$(t "Cek fastboot" "Check fastboot")
     cetak "${PUTIH}[  ${ORANYE}1${PUTIH}  ] [ ${ORANYE}${teks}${PUTIH} ]${RESET}"
-    cetak "${ABU_GELAP}[  0  ] [ $(t "kembali" "back") ]${RESET}"
+    cetak "${ABU_GELAP}[  0  ] [ $(t "Kembali" "Back") ]${RESET}"
     cetak ""
     # Cek apakah HP sudah terdeteksi dalam mode fastboot. Kalau belum, tampilkan petunjuk abu-abu.
     keluar=$(timeout 5 "$fb" devices 2>&1)
