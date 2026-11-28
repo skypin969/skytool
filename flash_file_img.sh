@@ -20,6 +20,8 @@ FI_LOG="$HOME/skytool_flash_img.log"
 FI_PESAN=""
 # Slot aktif yang terakhir terbaca dari HP
 FI_SLOT=""
+# Daftar nama partisi yang dilaporkan HP (satu per baris), dipakai untuk cek slot a/b pada pilihan 5
+FI_DAFTAR_PARTISI=""
 
 deteksi_bahasa() {
     local kode="${SKYTOOL_BAHASA:-}"
@@ -72,6 +74,13 @@ fi_baca_slot() {
     printf '%s' "$keluar" | grep -oP 'current-slot: \K[^ \r]+' | head -n 1
 }
 
+# Membaca daftar nama partisi dari "fastboot getvar all". Hanya membaca, tidak mengubah HP.
+fi_baca_partisi() {
+    local fb="$1" keluar
+    keluar=$(timeout 10 "$fb" getvar all 2>&1)
+    printf '%s' "$keluar" | grep -oP 'partition-size:\K[^: \r]+' | sort -u
+}
+
 # Menunggu HP dalam mode fastboot, lalu membaca slot aktifnya. Layar ditimpa tanpa berkedip.
 fi_tunggu_slot() {
     local fb="$1" slot="" i=0
@@ -91,17 +100,25 @@ fi_tunggu_slot() {
     done
 }
 
+# Satu baris menu dengan lebar tetap, supaya tanda ] di setiap baris sejajar
+fi_baris() {
+    local warna="$1" nomor="$2" nama="$3"
+    cetak "${warna}$(printf '[ %2s ] [ %-12s ]' "$nomor" "$nama")${RESET}"
+}
+
 # Daftar partisi, lalu pilihan dibaca. Hasil: target (misalnya boot atau boot_b) lewat FI_TARGET
 fi_gambar_partisi() {
     fi_judul
-    cetak "${PUTIH}[  1  ] [  boot  ]${RESET}"
-    cetak "${PUTIH}[  2  ] [  init_boot  ]${RESET}"
-    cetak "${PUTIH}[  3  ] [  vendor_boot  ]${RESET}"
-    cetak "${PUTIH}[  4  ] [  recovery  ]${RESET}"
+    fi_baris "$PUTIH" 1 boot
+    fi_baris "$PUTIH" 2 init_boot
+    fi_baris "$PUTIH" 3 vendor_boot
+    fi_baris "$PUTIH" 4 recovery
+    fi_baris "$PUTIH" 5 "$(t "lainnya" "other")"
     cetak ""
-    cetak "${ABU_GELAP}[  0  ] [  $(t "kembali" "back")  ]${RESET}"
+    fi_baris "$ABU_GELAP" 0 "$(t "kembali" "back")"
     cetak ""
     cetak "${ABU_GELAP}$(t "Tambah a atau b untuk slot tertentu, misalnya 1b" "Add a or b for a specific slot, for example 1b")${RESET}"
+    cetak "${ABU_GELAP}$(t "Partisi lain: ketik 5 lalu namanya, misalnya 5super" "Other partition: type 5 then its name, for example 5super")${RESET}"
     cetak ""
     if [ -n "$FI_PESAN" ]; then
         cetak "$FI_PESAN"
@@ -113,6 +130,21 @@ fi_gambar_partisi() {
 # Mengubah pilihan seperti 1, 1a, atau 1b menjadi nama partisi. Gagal kalau bentuknya salah.
 fi_ubah_pilihan() {
     local pil="${1,,}" nomor akhiran bagian
+    # 5 diikuti nama partisi, misalnya 5super -> partisi "super" (nama harus huruf, angka, atau _)
+    if [[ "$pil" == 5?* ]]; then
+        local nama="${pil:1}" dasar
+        [[ "$nama" =~ ^[a-z0-9_]+$ ]] || return 1
+        # Akhiran _a atau _b hanya boleh kalau partisi dasarnya punya kedua slot di HP
+        if [[ "$nama" == *_a || "$nama" == *_b ]]; then
+            dasar="${nama%_?}"
+            if [ -n "$FI_DAFTAR_PARTISI" ] && ! { grep -qx "${dasar}_a" <<<"$FI_DAFTAR_PARTISI" && grep -qx "${dasar}_b" <<<"$FI_DAFTAR_PARTISI"; }; then
+                FI_PESAN="${MERAH}$(t "Partisi ${dasar} tidak punya slot a/b. Ketik 5${dasar} saja." "Partition ${dasar} has no a/b slots. Type 5${dasar} only.")${RESET}"
+                return 1
+            fi
+        fi
+        FI_TARGET="$nama"
+        return 0
+    fi
     nomor="${pil:0:1}"
     akhiran="${pil:1}"
     case "$nomor" in
@@ -153,7 +185,7 @@ fi_pilih_file() {
         fi
     fi
     cetak ""
-    cetak "${ABU_GELAP}[  0  ] [  $(t "kembali" "back")  ]${RESET}"
+    fi_baris "$ABU_GELAP" 0 "$(t "kembali" "back")"
     cetak ""
     printf '%s' "${PUTIH}$(t "Ketik nama file, lalu Enter: " "Type the file name, then Enter: ")${RESET}"
     read -r nama || return 1
@@ -217,6 +249,7 @@ buka_flash_img() {
         return 0
     fi
     fi_tunggu_slot "$fb"
+    FI_DAFTAR_PARTISI=$(fi_baca_partisi "$fb")
     while true; do
         fi_gambar_partisi
         read -r pilihan || return 0
@@ -225,7 +258,7 @@ buka_flash_img() {
             ""|0) return 0 ;;
         esac
         if ! fi_ubah_pilihan "$pilihan"; then
-            FI_PESAN="${MERAH}$(t "Pilihan itu tidak ada. Contoh: 1, 1a, atau 1b." "That choice does not exist. Examples: 1, 1a, or 1b.")${RESET}"
+            [ -z "$FI_PESAN" ] && FI_PESAN="${MERAH}$(t "Pilihan itu tidak ada. Contoh: 1, 1a, 1b, atau 5super." "That choice does not exist. Examples: 1, 1a, 1b, or 5super.")${RESET}"
             continue
         fi
         if fi_pilih_file "$FI_TARGET"; then
